@@ -388,10 +388,38 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.4rem;
-            padding-right: 0.6rem;
+            padding: 0.4rem 28px 0.4rem 0.6rem; /* 調整右側 padding，始終為按鈕保留空間 */
             border-radius: 6px;
             font-size: 0.85rem;
+            position: relative; /* 為了定位刪除按鈕 */
+            transition: background-color 0.2s;
+        }
+        .summary-item .remove-btn {
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 1; /* 在觸控裝置上預設可見 */
+            transition: opacity 0.2s; /* 為透明度加上漸變效果 */
+        }
+        .summary-item .remove-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-secondary);
+            transition: stroke 0.2s;
+        }
+        .summary-item .remove-btn:hover svg {
+            stroke: var(--btn-reset-bg);
         }
         .summary-item img { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; }
         
@@ -405,6 +433,18 @@
             animation: pulse 1.5s infinite ease-in-out;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* 在支援 hover 的裝置上 (電腦)，預設隱藏 X 按鈕 */
+        @media (hover: hover) and (pointer: fine) {
+            .summary-item .remove-btn {
+                opacity: 0; /* 預設透明 */
+                pointer-events: none; /* 隱藏時不可點擊 */
+            }
+            .summary-item:hover .remove-btn {
+                opacity: 1; /* Hover 時浮現 */
+                pointer-events: auto;
+            }
+        }
         
         /* --- 圖表區塊 --- */
         .charts-container {
@@ -1497,9 +1537,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (vegInfo) {
                     const li = document.createElement('li');
                     li.className = 'summary-item';
+                    li.dataset.name = vegInfo.name; // 加上 data-name 以便識別
                     li.innerHTML = `
                         <img src="${vegInfo.image}" alt="${vegInfo.name}" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e0e0e0/757575?text=?';">
                         <span>${vegInfo.name}</span>
+                        <button class="remove-btn" title="取消選取">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     `;
                     listEl.appendChild(li);
                 }
@@ -2429,6 +2475,27 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('import-file-input').addEventListener('change', handleFileUpload);
 
     editForm.addEventListener('submit', handleFormSubmit);
+
+    // --- 成果區項目取消選取功能 ---
+    document.getElementById('summary-list').addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-btn');
+        if (!removeBtn) return;
+
+        const summaryItem = removeBtn.closest('.summary-item');
+        if (!summaryItem) return;
+
+        const name = summaryItem.dataset.name;
+        if (!name) return;
+
+        // 更新資料狀態
+        if (eatenState[startDate]?.items?.[name]) {
+            eatenState[startDate].items[name] = false;
+            saveData();
+            // 直接重新渲染畫面，確保所有相關區塊 (計數、圖表、蔬菜格) 都同步更新
+            updateView();
+        }
+    });
+
 
     // --- 相機功能 ---
     document.getElementById('camera-btn').addEventListener('click', async () => {
