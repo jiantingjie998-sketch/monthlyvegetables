@@ -622,6 +622,19 @@
                 width: calc(100% - 2rem);
                 margin: 1rem;
             }
+            /* --- 縮小成果區按鈕以適應窄螢幕 --- */
+            .summary-actions {
+                gap: 0.5rem; /* 8px */
+            }
+            .summary-actions .btn-icon {
+                width: 34px;
+                height: 34px;
+            }
+            .summary-actions .btn-icon svg {
+                width: 18px;
+                height: 18px;
+                stroke-width: 1.8; /* 讓縮小的圖示線條更清晰 */
+            }
         }
 
         .modal-content h3 { margin-top: 0; color: var(--header-color); }
@@ -746,7 +759,7 @@
                 </svg>
             </button>
             <div class="header">
-                <h1>我的多元營養攝取</h1>
+                <h1>我的紀錄</h1>
             </div>
             <div class="date-selector">
                 <input type="date" id="start-date-picker" value="">
