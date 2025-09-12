@@ -742,6 +742,9 @@
                 flex-wrap: wrap; /* 在窄螢幕上允許標題和按鈕換行 */
                 gap: 0.75rem;
             }
+            .home-intro h1 {
+                font-size: 1.5rem; /* 在窄螢幕上縮小首頁標題 */
+            }
         }
 
         .modal-content h3 { margin-top: 0; color: var(--header-color); }
@@ -807,7 +810,7 @@
         }
         #home-screen #management-btn {
             position: absolute;
-            top: calc(0.75rem - 20px); /* 再往上移動 10px */
+            top: 1.25rem; /* 調整 top 值以與標題水平對齊 */
             left: calc(0.75rem - 10px); /* 移至左邊對應位置 */
             background-color: transparent;
             box-shadow: none;
@@ -886,6 +889,9 @@
         .day-cell.empty-cell { cursor: default; }
         
         @media (max-width: 420px) { /* 針對特別窄的螢幕縮小字體 */
+            .day-cell {
+                aspect-ratio: 1 / 1.1; /* 稍微增加高度，讓視覺更舒適 */
+            }
             .day-number {
                 font-size: 0.7em;
             }
@@ -909,7 +915,7 @@
             <button id="management-btn" class="btn btn-icon btn-select" title="管理">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
             </button>
-            <p>輕鬆記錄每日攝取蔬菜品項，幫助攝取多元營養。<br>請點擊下方月曆的日期，開始記錄或查看當日攝取狀況。</p>
+            <p>輕鬆記錄每日攝取蔬菜品項，幫助攝取多元營養。<br>請點擊下方日期，記錄或查看當日攝取狀況。</p>
         </div>
         <div id="calendar-container">
             <div id="calendar-header">
