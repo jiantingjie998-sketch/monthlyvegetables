@@ -515,6 +515,29 @@
             max-width: none; /* 允許圖表填滿其容器寬度 */
             margin: 0 auto;
         }
+        .chart-wrapper canvas {
+            touch-action: pan-y; /* 允許垂直滾動，但攔截水平滑動以用於切換頁面 */
+        }
+
+        .pagination-container {
+            text-align: center;
+            padding-top: 10px;
+        }
+
+        .pagination-dot {
+            cursor: pointer;
+            height: 10px;
+            width: 10px;
+            margin: 0 4px;
+            background-color: #ccc;
+            border-radius: 50%;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination-dot.active {
+            background-color: var(--btn-save-bg);
+        }
 
         .treemap-wrapper {
             /* 此樣式已合併至 .chart-wrapper，不再需要 */
@@ -897,7 +920,10 @@
                     <h3>攝取品項</h3>
                 </div>
                 <div class="charts-content">
-                    <div class="chart-wrapper"><canvas id="treemap-chart"></canvas></div>
+                    <div style="width: 100%;">
+                        <div class="chart-wrapper"><canvas id="treemap-chart"></canvas></div>
+                        <div id="treemap-pagination" class="pagination-container"></div>
+                    </div>
                 </div>
             </div>
             <div id="nutrient-chart-section" class="summary-section">
@@ -1233,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let summaryPieChart4 = null; // 第四個圖表的實例 (微量元素)
     let dailyBarChart = null;   // 長條圖的實例
     let isStorageAvailable = true; // 追蹤 localStorage 是否可用
+    let currentTreemapPage = 0; // Treemap 分頁狀態
     let calendarDate = new Date(); // 用於月曆的目前日期
 
     const summarySection = document.querySelector('.summary-section');
@@ -1455,6 +1482,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startDate = startDatePicker.value;
         endDate = endDatePicker.value;
 
+        currentTreemapPage = 0; // 日期變更時，重置分頁
         if (endDate < startDate) {
             endDate = startDate;
             endDatePicker.value = startDate;
@@ -1886,7 +1914,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 圖表1: 攝取品項 (Treemap)
         const hasItemData = Object.keys(itemCounts).length > 0;
-        const ctx1 = document.getElementById('treemap-chart').getContext('2d');
+        const treemapCanvas = document.getElementById('treemap-chart');
+        const ctx1 = treemapCanvas.getContext('2d');
+        const paginationContainer = document.getElementById('treemap-pagination');
+        paginationContainer.innerHTML = ''; // 清空舊的分頁點
+
         if (hasItemData) {
             const vegNameToCategoryMap = {};
             Object.keys(vegetables).forEach(category => {
@@ -1895,11 +1927,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
 
-            const treemapData = Object.entries(itemCounts).map(([name, count]) => ({
+            let treemapData = Object.entries(itemCounts).map(([name, count]) => ({
                 name: name,
-                count: count, // 保留原始次數，用於顯示
-                // 使用對數轉換值來計算面積，讓小區塊也能被看見
-                areaValue: Math.log(count + 1) + 1, 
+                count: count, // 直接使用此值計算面積和顯示
                 category: vegNameToCategoryMap[name] || '其他'
             }));
 
@@ -1915,9 +1945,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 return categoryIndexA - categoryIndexB;
             });
 
+            const TREEMAP_PAGE_SIZE = 20;
+            let pages = [];
+            let dataForChart;
+
+            if (treemapData.length > TREEMAP_PAGE_SIZE) {
+                for (let i = 0; i < treemapData.length; i += TREEMAP_PAGE_SIZE) {
+                    pages.push(treemapData.slice(i, i + TREEMAP_PAGE_SIZE));
+                }
+
+                // 確保頁碼在有效範圍內
+                if (currentTreemapPage >= pages.length) {
+                    currentTreemapPage = pages.length - 1;
+                }
+                dataForChart = pages[currentTreemapPage];
+
+                // 渲染分頁點
+                pages.forEach((_, index) => {
+                    const dot = document.createElement('span');
+                    dot.className = 'pagination-dot';
+                    if (index === currentTreemapPage) {
+                        dot.classList.add('active');
+                    }
+                    dot.dataset.page = index;
+                    dot.addEventListener('click', () => {
+                        currentTreemapPage = index;
+                        // 重新渲染所有圖表以更新分頁
+                        renderSummary(); 
+                    });
+                    paginationContainer.appendChild(dot);
+                });
+            } else {
+                dataForChart = treemapData;
+            }
+
+            // 建立顏色對應表，讓同類別有不同深淺
+            // 注意：這裡要用 dataForChart 來建立顏色，確保只為當前頁的項目上色
             // 建立顏色對應表，讓同類別有不同深淺
             const itemsByCategory = {};
-            treemapData.forEach(item => {
+            dataForChart.forEach(item => {
                 const category = item.category;
                 if (!itemsByCategory[category]) {
                     itemsByCategory[category] = [];
@@ -1942,8 +2008,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 type: 'treemap',
                 data: {
                     datasets: [{
-                        tree: treemapData,
-                        key: 'areaValue', // 使用轉換後的值來決定面積
+                        tree: dataForChart,
+                        key: 'count', // 直接使用攝取次數決定面積
                         borderWidth: 0, // 移除框線
                         spacing: 0,     // 移除間距
                         labels: {
@@ -1981,6 +2047,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         } else {
+            paginationContainer.innerHTML = ''; // 沒有資料時也清空分頁點
             // 如果沒有資料，可以選擇清空畫布或顯示提示
             ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
             ctx1.font = "16px 'Noto Sans TC'";
@@ -1988,6 +2055,35 @@ document.addEventListener('DOMContentLoaded', function() {
             ctx1.textAlign = 'center';
             ctx1.fillText('無攝取品項資料', ctx1.canvas.width / 2, ctx1.canvas.height / 2);
         }
+
+        // --- 為 Treemap 圖表加上滑動手勢 ---
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const swipeThreshold = 50; // 最小滑動距離
+
+        treemapCanvas.removeEventListener('touchstart', handleTouchStart);
+        treemapCanvas.removeEventListener('touchend', handleTouchEnd);
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }
+
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            const swipeDistance = touchEndX - touchStartX;
+
+            if (Math.abs(swipeDistance) > swipeThreshold) {
+                if (swipeDistance < 0 && currentTreemapPage < pages.length - 1) {
+                    currentTreemapPage++; // 向左滑，下一頁
+                    renderSummary();
+                } else if (swipeDistance > 0 && currentTreemapPage > 0) {
+                    currentTreemapPage--; // 向右滑，上一頁
+                    renderSummary();
+                }
+            }
+        }
+        treemapCanvas.addEventListener('touchstart', handleTouchStart);
+        treemapCanvas.addEventListener('touchend', handleTouchEnd);
 
         // 圖表2: 營養素分佈
         const sortedNutrients = Object.entries(nutrientCounts)
