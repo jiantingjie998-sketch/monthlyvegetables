@@ -612,10 +612,12 @@
         #camera-controls {
             position: absolute;
             bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
+            right: 0;
             display: flex;
-            gap: 1rem;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 1rem;
         }
         #capture-btn {
             width: 60px; height: 60px; border-radius: 50%; border: 4px solid white; background-color: rgba(255,255,255,0.3);
@@ -810,6 +812,7 @@
             </button>
         </div>
         <input type="file" id="import-file-input" accept=".json" style="display: none;">
+        <input type="file" id="upload-photo-input" accept="image/*" style="display: none;">
 
         <div class="summary-section">
             <div class="summary-header">
@@ -837,7 +840,7 @@
         <div id="charts-grid" class="charts-container">
             <div id="category-chart-section" class="summary-section">
                 <div class="summary-header">
-                    <h3>種類</h3>
+                    <h3>攝取種類</h3>
                 </div>
                 <div class="charts-content">
                     <div class="chart-wrapper"><canvas id="summary-pie-chart-1"></canvas></div>
@@ -845,7 +848,7 @@
             </div>
             <div id="unique-items-chart-section" class="summary-section">
                 <div class="summary-header">
-                    <h3>大類</h3>
+                    <h3>攝取大類</h3>
                 </div>
                 <div class="charts-content">
                     <div class="chart-wrapper"><canvas id="summary-pie-chart-3"></canvas></div>
@@ -853,13 +856,21 @@
             </div>
             <div id="nutrient-chart-section" class="summary-section">
                 <div class="summary-header">
-                    <h3>營養素</h3>
+                    <h3>主要營養素</h3>
                 </div>
                 <div class="charts-content">
                     <div class="chart-wrapper"><canvas id="summary-pie-chart-2"></canvas></div>
                 </div>
             </div>
-            <div id="daily-chart-container" class="summary-section" style="display: none;">
+            <div id="trace-elements-chart-section" class="summary-section">
+                <div class="summary-header">
+                    <h3>微量元素</h3>
+                </div>
+                <div class="charts-content">
+                    <div class="chart-wrapper"><canvas id="summary-pie-chart-4"></canvas></div>
+                </div>
+            </div>
+            <div id="daily-chart-container" class="summary-section">
                 <div class="summary-header">
                     <h3>攝取分析</h3>
                 </div>
@@ -967,8 +978,27 @@
             <video id="camera-view" autoplay playsinline></video>
             <canvas id="camera-canvas" style="display:none;"></canvas>
             <div id="camera-controls">
-                <button type="button" class="btn btn-cancel" data-modal="camera-modal">取消</button>
+                <label for="upload-photo-input" class="btn btn-icon" title="從相簿選取">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z"></path>
+                    </svg>
+                </label>
                 <button type="button" id="capture-btn" title="拍照"></button>
+                <button type="button" class="btn btn-cancel" data-modal="camera-modal">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 照片刪除確認 Modal -->
+    <div id="photo-delete-confirm-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="photo-delete-confirm-title">刪除照片</h3>
+            <p id="photo-delete-confirm-message">您想要如何處理這張照片？</p>
+            <div id="photo-delete-confirm-actions" class="management-actions" style="margin-bottom: 1rem;">
+                <!-- Buttons will be injected here by JS -->
+            </div>
+            <div class="modal-actions" style="justify-content: center;">
+                <button type="button" class="btn btn-cancel" data-modal="photo-delete-confirm-modal">取消</button>
             </div>
         </div>
     </div>
@@ -1135,7 +1165,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     };
 
-    const categoryOrder = ['葉菜', '辛香料', '根莖穀豆', '瓜果莖', '菌菇'];
+    const categoryOrder = ['葉菜', '瓜果莖', '根莖穀豆', '菌菇', '辛香料'];
     const dataVersion = '7.15'; // 資料版本控制 (營養素更新)
     const itemsToRemoveInMigration = ['豆類', '綠豆', '紅豆', '花生']; // 在資料合併時要移除的舊品項
 
@@ -1154,6 +1184,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let summaryPieChart1 = null; // 第一個圖表的實例
     let summaryPieChart2 = null; // 第二個圖表的實例
     let summaryPieChart3 = null; // 第三個圖表的實例
+    let summaryPieChart4 = null; // 第四個圖表的實例 (微量元素)
     let dailyBarChart = null;   // 長條圖的實例
     let isStorageAvailable = true; // 追蹤 localStorage 是否可用
     let calendarDate = new Date(); // 用於月曆的目前日期
@@ -1168,6 +1199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const aboutModal = document.getElementById('about-modal');
     const cameraModal = document.getElementById('camera-modal');
     const photoViewerModal = document.getElementById('photo-viewer-modal');
+    const photoDeleteConfirmModal = document.getElementById('photo-delete-confirm-modal');
     const modalTitle = document.getElementById('modal-title');
     const editForm = document.getElementById('edit-form');
     const editCategoryInput = document.getElementById('edit-category');
@@ -1177,6 +1209,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const vegImageLabel = document.getElementById('veg-image-label');
     const startDatePicker = document.getElementById('start-date-picker');
     const endDatePicker = document.getElementById('end-date-picker');
+    const uploadPhotoInput = document.getElementById('upload-photo-input');
 
     // 日期範圍變數
     let startDate, endDate;
@@ -1555,6 +1588,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const listEl = document.getElementById('summary-list');
         const uniqueCategoryCounts = {}; // 用於圖表3：計算每個分類下的獨立品項數
         const nutrientCounts = {};
+        const traceElementCounts = {}; // 用於圖表4：微量元素計數
         
         listEl.innerHTML = ''; // 每次渲染前清空列表
         document.getElementById('photo-gallery-section').innerHTML = ''; // 清空照片區
@@ -1566,6 +1600,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 listEl.appendChild(li);
             }
         } else {
+            // 定義哪些是微量元素
+            const traceElements = ['碘', '鎂', '鐵', '鈣', '鉀', '鋅', '錳', '硒', '磷'];
+
             eatenList.forEach(name => {
                 let vegInfo = null;
                 for (const category in vegetables) {
@@ -1578,7 +1615,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             nutrients.forEach(nutrient => {
                                 const trimmedNutrient = nutrient.trim();
                                 if (trimmedNutrient) {
-                                    nutrientCounts[trimmedNutrient] = (nutrientCounts[trimmedNutrient] || 0) + 1;
+                                    if (traceElements.includes(trimmedNutrient)) {
+                                        traceElementCounts[trimmedNutrient] = (traceElementCounts[trimmedNutrient] || 0) + 1;
+                                    } else {
+                                        nutrientCounts[trimmedNutrient] = (nutrientCounts[trimmedNutrient] || 0) + 1;
+                                    }
                                 }
                             });
                         }
@@ -1604,16 +1645,16 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // 渲染照片
+        // 渲染照片 (僅在單日模式)
         const photoGallery = document.getElementById('photo-gallery-section');
         photoGallery.innerHTML = ''; // 每次渲染前清空
         if (!isMultiDay && eatenState[startDate]?.photos?.length > 0) {
-            eatenState[startDate].photos.forEach((photoDataUrl, index) => {
+            eatenState[startDate].photos.forEach((photo, index) => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'photo-thumbnail-wrapper';
 
                 const img = document.createElement('img');
-                img.src = photoDataUrl;
+                img.src = photo.url;
                 img.className = 'photo-thumbnail';
                 img.alt = '攝取紀錄照片';
 
@@ -1628,24 +1669,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 photoGallery.appendChild(wrapper);
             });
         }
-        renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts);
+        renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts, traceElementCounts);
 
         // 根據日期選擇，決定是否顯示每日長條圖
         const dailyChartContainer = document.getElementById('daily-chart-container');
-        const dailyChartTitle = dailyChartContainer.querySelector('h3');
 
         if (eatenList.length === 0) {
-            dailyChartContainer.style.display = 'block';
+            dailyChartContainer.classList.add('visible-chart');
             renderPlaceholderBarChart();
         } else if (isMultiDay) {
             // 多日檢視
-            dailyChartContainer.style.display = 'block';
+            dailyChartContainer.classList.add('visible-chart');
             const dailyCategoryCounts = {};
             const allCategoriesInRange = new Set();
 
             datesInRange.forEach(dateStr => {
                 dailyCategoryCounts[dateStr] = {};
-                const dailyEatenItems = eatenState[dateStr]?.items || {};
+                const dailyEatenItems = eatenState[dateStr]?.items || {}; // 從 items 讀取
                 Object.keys(dailyEatenItems).forEach(vegName => {
                     for (const category in vegetables) {
                         if (vegetables[category].some(v => v.name === vegName)) {
@@ -1664,7 +1704,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderMultiDayTrendChart(dailyCategoryCounts, sortedCategories);
         } else { 
             // 單日檢視
-            dailyChartContainer.style.display = 'block';
+            dailyChartContainer.classList.add('visible-chart');
             renderSingleDayCategoryChart(uniqueCategoryCounts);
         }
         renderRecommendations();
@@ -1774,10 +1814,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 渲染兩個圖表
-    function renderCharts(itemCounts, nutrientCounts, categoryCounts) {
+    function renderCharts(itemCounts, nutrientCounts, categoryCounts, traceElementCounts) {
         if (summaryPieChart1) summaryPieChart1.destroy();
         if (summaryPieChart2) summaryPieChart2.destroy();
         if (summaryPieChart3) summaryPieChart3.destroy();
+        if (summaryPieChart4) summaryPieChart4.destroy();
 
         const computedStyle = getComputedStyle(document.documentElement);
         const getCategoryColors = (labels) => labels.map(label => {
@@ -1785,6 +1826,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return varName ? computedStyle.getPropertyValue(varName).trim() : '#cccccc';
         });
 
+        const traceElementColors = [
+            '#8cd1e6', '#f5b7cb', '#b2d8b2', '#fde2a3', '#d7bde2',
+            '#a9dfbf', '#f1c4a8', '#aed6f1', '#f5cba7', '#b3b6b7'
+        ];
         const nutrientColors = [
             '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
             '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
@@ -1804,28 +1849,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 count,
                 category: vegNameToCategoryMap[name] || ''
             }))
-            .sort((a, b) => {
-                const categoryIndexA = categoryOrder.indexOf(a.category);
-                const categoryIndexB = categoryOrder.indexOf(b.category);
+            .sort((a, b) => b.count - a.count); // 依攝取次數由高到低排序
 
-                if (categoryIndexA !== categoryIndexB) {
-                    return categoryIndexA - categoryIndexB; // 依分類排序
-                }
-                return b.count - a.count; // 再依數量排序
-            });
-
-        const itemLabels = sortedItems.map(item => item.name);
+        const itemLabels = sortedItems.map(item => `${item.name} (${item.count})`);
         const itemData = sortedItems.map(item => item.count);
 
         // 為圖表1生成顏色：相同類別的品項顏色相近但不同
         const itemsByCategory = {};
-        itemLabels.forEach(label => {
-            for (const category in vegetables) {
-                if (vegetables[category].some(v => v.name === label)) {
-                    if (!itemsByCategory[category]) itemsByCategory[category] = [];
-                    itemsByCategory[category].push(label);
-                    break;
-                }
+        sortedItems.forEach(item => {
+            if (item.category) {
+                if (!itemsByCategory[item.category]) itemsByCategory[item.category] = [];
+                itemsByCategory[item.category].push(`${item.name} (${item.count})`);
             }
         });
         const itemColorMap = {};
@@ -1841,7 +1875,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const totalUniqueItems = itemLabels.length;
         const itemCenterText = { main: totalUniqueItems, sub: '' };
         const itemConfig = createChartConfig(
-            '各品項攝取分佈',
+            '攝取種類',
             itemLabels, 
             itemData,
             itemColors,
@@ -1859,7 +1893,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const nutrientCenterText = { main: nutrientLabels.length, sub: '' };
         const nutrientConfig = createChartConfig(
-            '主要營養素分佈',
+            '主要營養素',
             nutrientLabels,
             nutrientData,
             nutrientColors,
@@ -1882,7 +1916,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const totalUniqueCategories = categoryLabels.length;
         const categoryCenterText = { main: totalUniqueCategories, sub: '' };
         const categoryConfig = createChartConfig(
-            '各類別攝取種類',
+            '攝取大類',
             categoryLabels, 
             categoryData, 
             getCategoryColors(categoryLabels),
@@ -1890,6 +1924,24 @@ document.addEventListener('DOMContentLoaded', function() {
         );
         const ctx3 = document.getElementById('summary-pie-chart-3').getContext('2d');
         summaryPieChart3 = new Chart(ctx3, categoryConfig);
+
+        // 圖表4: 微量元素分佈
+        const sortedTraceElements = Object.entries(traceElementCounts)
+            .sort(([, a], [, b]) => b - a);
+
+        const traceLabels = sortedTraceElements.map(([label]) => label);
+        const traceData = sortedTraceElements.map(([, data]) => data);
+
+        const traceCenterText = { main: traceLabels.length, sub: '' };
+        const traceConfig = createChartConfig(
+            '微量元素',
+            traceLabels,
+            traceData,
+            traceElementColors,
+            traceCenterText
+        );
+        const ctx4 = document.getElementById('summary-pie-chart-4').getContext('2d');
+        summaryPieChart4 = new Chart(ctx4, traceConfig);
     }
 
     function renderMultiDayTrendChart(dailyCategoryCounts, allCategories) {
@@ -2097,7 +2149,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const eatenInLast30Days = new Set();
         last30Days.forEach(dateStr => {
             const dailyEatenItems = eatenState[dateStr]?.items || {};
-            Object.keys(dailyEatenItems).forEach(vegName => {
+            Object.keys(dailyEatenItems).forEach(vegName => { // 從 items 讀取
                 if (dailyEatenItems[vegName]) {
                     eatenInLast30Days.add(vegName);
                 }
@@ -2539,6 +2591,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     editForm.addEventListener('submit', handleFormSubmit);
 
+    // --- 照片上傳功能 ---
+    uploadPhotoInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        stopCamera(); // 選擇照片後，關閉相機
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const imageDataUrl = e.target.result;
+            simulateRecognitionAndSave(imageDataUrl);
+        };
+        reader.readAsDataURL(file);
+        // 重置 input，以便可以再次選擇同一個檔案
+        event.target.value = '';
+    });
+
     // --- 成果區項目取消選取功能 ---
     document.getElementById('summary-list').addEventListener('click', (e) => {
         const removeBtn = e.target.closest('.remove-btn');
@@ -2565,17 +2633,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const thumbnail = e.target.closest('.photo-thumbnail');
 
         if (removeBtn) {
-            // 點擊了刪除按鈕
+            e.stopPropagation(); // 防止觸發開啟檢視器
             const photoIndex = parseInt(removeBtn.dataset.index, 10);
-            if (!isNaN(photoIndex)) {
-                showConfirmation('確定要刪除這張照片嗎？此操作不會影響已記錄的蔬菜品項。', () => {
-                    if (eatenState[startDate]?.photos) {
-                        eatenState[startDate].photos.splice(photoIndex, 1);
-                        saveData();
-                        updateView();
-                    }
+            if (isNaN(photoIndex)) return;
+
+            const photoToDelete = eatenState[startDate]?.photos?.[photoIndex];
+            if (!photoToDelete) return;
+
+            const recognizedItems = photoToDelete.recognizedItems || [];
+
+            if (recognizedItems.length > 0) {
+                // 有關聯蔬菜，顯示進階選項
+                showPhotoDeleteConfirmation(photoIndex, recognizedItems);
+            } else {
+                // 沒有關聯蔬菜 (舊資料)，顯示基本確認
+                showConfirmation('確定要刪除這張照片嗎？', () => {
+                    eatenState[startDate].photos.splice(photoIndex, 1);
+                    saveData();
+                    updateView();
                 });
             }
+
         } else if (thumbnail) {
             // 點擊了照片縮圖 (開啟檢視器)
             document.getElementById('photo-viewer-modal-image').src = thumbnail.src;
@@ -2583,8 +2661,65 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    function showPhotoDeleteConfirmation(photoIndex, recognizedItems) {
+        const modal = photoDeleteConfirmModal;
+        const actionsContainer = document.getElementById('photo-delete-confirm-actions');
+        const messageEl = document.getElementById('photo-delete-confirm-message');
+        actionsContainer.innerHTML = ''; // 清空舊按鈕
+
+        messageEl.textContent = `這張照片辨識出了「${recognizedItems.join('、')}」。您想要如何處理？`;
+
+        // 按鈕1: 只刪除照片
+        const deletePhotoOnlyBtn = document.createElement('button');
+        deletePhotoOnlyBtn.textContent = '只刪除照片';
+        deletePhotoOnlyBtn.className = 'btn btn-select';
+        deletePhotoOnlyBtn.onclick = () => {
+            eatenState[startDate].photos.splice(photoIndex, 1);
+            saveData();
+            updateView();
+            closeModal(modal);
+        };
+        actionsContainer.appendChild(deletePhotoOnlyBtn);
+
+        // 按鈕2: 刪除照片和對應蔬菜
+        const deleteBothBtn = document.createElement('button');
+        deleteBothBtn.textContent = '刪除照片和對應蔬菜';
+        deleteBothBtn.className = 'btn btn-reset'; // 紅色，表示更強的刪除操作
+        deleteBothBtn.onclick = () => {
+            // 刪除對應的蔬菜
+            recognizedItems.forEach(vegName => {
+                if (eatenState[startDate]?.items?.[vegName]) {
+                    delete eatenState[startDate].items[vegName];
+                }
+            });
+            // 刪除照片
+            eatenState[startDate].photos.splice(photoIndex, 1);
+            saveData();
+            updateView();
+            closeModal(modal);
+        };
+        actionsContainer.appendChild(deleteBothBtn);
+
+        modal.style.display = 'flex';
+    }
+
     // --- 相機功能 ---
-    document.getElementById('camera-btn').addEventListener('click', async () => {
+    document.getElementById('camera-btn').addEventListener('click', () => {
+        // 點擊相機按鈕時，直接開啟相機
+        openCamera();
+    });
+
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        closeModal(cameraModal);
+    }
+
+    document.querySelector('#camera-modal .btn-cancel').addEventListener('click', stopCamera);
+
+    async function openCamera() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             alert('您的瀏覽器不支援相機功能。');
             return;
@@ -2600,17 +2735,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error("相機錯誤:", err);
             alert('無法開啟相機。請確認您已授權網站使用相機，或您的相機未被其他應用程式佔用。');
         }
-    });
-
-    function stopCamera() {
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-            cameraStream = null;
-        }
-        closeModal(cameraModal);
     }
-
-    document.querySelector('#camera-modal .btn-cancel').addEventListener('click', stopCamera);
 
     document.getElementById('capture-btn').addEventListener('click', () => {
         const video = document.getElementById('camera-view');
@@ -2647,11 +2772,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- 模擬結束 ---
 
         if (!eatenState[startDate]) eatenState[startDate] = { items: {}, photos: [] };
+
+        const recognizedVegNames = recognizedVeggies.map(v => v.name);
         
-        recognizedVeggies.forEach(veg => {
-            eatenState[startDate].items[veg.name] = true;
+        recognizedVegNames.forEach(vegName => {
+            eatenState[startDate].items[vegName] = true;
         });
-        eatenState[startDate].photos.push(imageDataUrl);
+        eatenState[startDate].photos.push({
+            url: imageDataUrl,
+            recognizedItems: recognizedVegNames
+        });
         saveData();
         updateView();
         alert(`模擬辨識完成！已自動新增：${recognizedVeggies.map(v => v.name).join('、')}`);
