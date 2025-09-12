@@ -41,25 +41,22 @@
             background-color: var(--bg-color);
             color: var(--text-primary);
             margin: 0;
-            padding: 0 1rem; /* 在 body 層級統一設定左右邊距 */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-sizing: border-box; /* 確保 padding 被包含在 body 的總寬度內 */
+            padding: 0;
         }
         
         .main-content {
             width: 100%;
             max-width: 1200px;
-            padding: 1rem 0; /* 移除左右 padding，改由 body 控制 */
+            padding: 1rem;
             box-sizing: border-box; /* 確保 padding 不會影響總寬度 */
+            margin: 0 auto;
         }
 
         /* --- 頂部容器與日期選擇器 --- */
         .top-container {
             display: grid;
-            grid-template-areas: "back header dates manage";
-            grid-template-columns: auto 1fr auto auto;
+            grid-template-areas: "back header dates";
+            grid-template-columns: auto 1fr auto;
             justify-content: space-between;
             align-items: center; /* 確保所有項目在垂直方向上置中對齊 */
             width: 100%;
@@ -103,13 +100,9 @@
             min-width: 140px;
         }
 
-        #management-btn {
-            grid-area: manage;
-        }
-
         #back-to-home-btn {
             grid-area: back;
-    background-color: transparent; /* 移除背景色 */
+    background-color: transparent;
     box-shadow: none; /* 移除陰影 */
 }
 
@@ -127,14 +120,13 @@
 
         @media (max-width: 600px) {
             .top-container {
-                grid-template-columns: auto 1fr auto;
+                grid-template-columns: auto 1fr; /* 返回按鈕佔用所需空間，標題佔用剩餘空間 */
                 grid-template-areas: 
-                    "back  header manage"
-                    "dates dates  dates"; /* 確保日期選擇器橫跨所有欄位，使其正確對齊 */
+                    "back  header"
+                    "dates dates"; /* 日期選擇器橫跨兩欄 */
             }
             .date-selector { 
-                justify-content: center; /* 在換行時讓日期選擇器整體置中 */
-                justify-content: flex-start;
+                justify-content: flex-start; /* 在換行時讓日期選擇器靠左對齊 */
             }
         }
 
@@ -593,8 +585,10 @@
             font-size: 0.85rem;
             color: var(--text-secondary);
             width: 100%;
-            max-width: 1200px;
+            max-width: 900px; /* 與日曆區塊寬度對齊 */
             box-sizing: border-box;
+            margin-left: auto; /* 水平置中以對齊上方區塊 */
+            margin-right: auto; /* 水平置中以對齊上方區塊 */
         }
 
         @media (max-width: 480px) {
@@ -764,9 +758,10 @@
             width: 100%;
             max-width: 900px;
             margin: 2rem auto;
-            padding: 1rem 0; /* 移除左右 padding，改由 body 控制 */
+            padding: 1rem;
             box-sizing: border-box;
             display: flex;
+            position: relative; /* 設為相對定位，以便定位內部的絕對元素 */
             flex-direction: column;
             align-items: center;
             text-align: center;
@@ -787,6 +782,22 @@
             line-height: 1.6;
             max-width: 650px;
             margin: 0 auto; /* 移除底部 margin，改由 .home-intro 控制 */
+        }
+        #home-screen #management-btn {
+            position: absolute;
+            top: calc(0.75rem - 20px); /* 再往上移動 10px */
+            right: calc(0.75rem - 10px); /* 往右移動 10px */
+            background-color: transparent;
+            box-shadow: none;
+        }
+        #home-screen #management-btn:hover {
+            background-color: #eef1ee; /* 加上淡淡的 hover 背景色 */
+        }
+        #home-screen #management-btn svg {
+            stroke: var(--header-color);
+            width: 28px;
+            height: 28px;
+            stroke-width: 1.8;
         }
         #calendar-container {
             width: 100%;
@@ -842,12 +853,24 @@
         .day-cell.has-data.today { background-color: #d8e2d8; }
         .day-cell.empty-cell { cursor: default; }
         
+        @media (max-width: 420px) { /* 針對特別窄的螢幕縮小字體 */
+            .day-number {
+                font-size: 0.7em;
+            }
+            .day-count {
+                font-size: 1.0em;
+            }
+        }
+        
     </style>
 </head>
 <body>
     <div id="home-screen" style="display: none;">
         <div class="home-intro">
             <h1>我的多元營養攝取</h1>
+            <button id="management-btn" class="btn btn-icon btn-select" title="管理">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+            </button>
             <p>輕鬆記錄每日攝取蔬菜品項，幫助攝取多元營養。<br>請點擊下方月曆的日期，開始記錄或查看當日攝取狀況。</p>
         </div>
         <div id="calendar-container">
@@ -876,9 +899,6 @@
                 <span class="date-label">&mdash;</span>
                 <input type="date" id="end-date-picker" value="">
             </div>
-            <button id="management-btn" class="btn btn-icon btn-select" title="管理">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
-            </button>
         </div>
         <input type="file" id="import-file-input" accept=".json" style="display: none;">
         <input type="file" id="upload-photo-input" accept="image/*" style="display: none;">
@@ -3090,12 +3110,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function showHomeScreen() {
         document.getElementById('home-screen').style.display = 'flex';
         document.querySelector('.main-content').style.display = 'none';
+        document.getElementById('footer-section').style.maxWidth = '900px';
         renderCalendar(calendarDate.getFullYear(), calendarDate.getMonth());
     }
 
     function showMainView(dateStr) {
         document.getElementById('home-screen').style.display = 'none';
         document.querySelector('.main-content').style.display = 'block';
+        document.getElementById('footer-section').style.maxWidth = '1200px';
         
         startDatePicker.value = dateStr;
         endDatePicker.value = dateStr;
