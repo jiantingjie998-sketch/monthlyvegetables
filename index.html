@@ -207,6 +207,27 @@
             opacity: 0;
         }
 
+        /* --- 建議攝取區塊的特殊樣式 --- */
+        /* 寬螢幕：最多顯示3排，超出則滾動 */
+        #recommendation-section:not(.collapsed) #recommendation-grid {
+            max-height: 420px; /* 約3排蔬菜的高度 */
+            overflow-y: auto;
+            padding-right: 8px; /* 為滾動條留出空間 */
+        }
+
+        /* 窄螢幕：全部展開 */
+        @media (max-width: 768px) {
+            #recommendation-section:not(.collapsed) #recommendation-grid {
+                max-height: 2000px; /* 恢復足夠大的高度以全部顯示 */
+                overflow-y: hidden; /* 在手機上隱藏滾動條 */
+                padding-right: 0;
+            }
+        }
+
+        /* --- 建議攝取區塊標題的特殊樣式 --- */
+        #recommendation-section h2 {
+            font-size: 1.5rem; /* 與月曆標題字級一致 */
+        }
 
         /* --- 單一蔬菜格 --- */
         .veg-item {
@@ -585,7 +606,7 @@
             font-size: 0.85rem;
             color: var(--text-secondary);
             width: 100%;
-            max-width: 900px; /* 與日曆區塊寬度對齊 */
+            max-width: 1200px; /* 與主內容區塊寬度一致 */
             box-sizing: border-box;
             margin-left: auto; /* 水平置中以對齊上方區塊 */
             margin-right: auto; /* 水平置中以對齊上方區塊 */
@@ -756,7 +777,7 @@
         /* --- Home Screen & Calendar --- */
         #home-screen {
             width: 100%;
-            max-width: 900px;
+            max-width: 1200px; /* 與次頁寬度一致 */
             margin: 2rem auto;
             padding: 1rem;
             box-sizing: border-box;
@@ -769,6 +790,7 @@
         .home-intro {
             /* --- 介紹區塊樣式 --- */
             margin-bottom: 2rem;
+            margin-bottom: 1rem; /* 減少與月曆之間的留白 */
         }
         .home-intro h1 {
             color: var(--header-color);
@@ -786,7 +808,7 @@
         #home-screen #management-btn {
             position: absolute;
             top: calc(0.75rem - 20px); /* 再往上移動 10px */
-            right: calc(0.75rem - 10px); /* 往右移動 10px */
+            left: calc(0.75rem - 10px); /* 移至左邊對應位置 */
             background-color: transparent;
             box-shadow: none;
         }
@@ -804,6 +826,16 @@
             background: #fff;
             border-radius: 12px;
             padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid #e5e5e5;
+            box-sizing: border-box; /* 確保 padding 不會撐開寬度 */
+        }
+        #home-screen #recommendation-section {
+            width: 100%;
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid #e5e5e5;
         }
@@ -862,6 +894,12 @@
             }
         }
         
+        @media (min-width: 769px) { /* 在寬螢幕上縮小日期格高度 */
+            .day-cell {
+                aspect-ratio: 4 / 3; /* 讓儲存格寬高比為 4:3，使其變扁 */
+            }
+        }
+        
     </style>
 </head>
 <body>
@@ -881,6 +919,20 @@
             </div>
             <div id="calendar-weekdays"></div>
             <div id="calendar-grid"></div>
+        </div>
+        <div id="recommendation-section" class="category-section">
+            <div class="category-header">
+                <div class="category-header-title">
+                    <div class="category-name-wrapper">
+                        <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        <h2>建議攝取</h2>
+                    </div>
+                    <span class="recommendation-subtitle">30天內未攝取</span>
+                </div>
+            </div>
+            <div id="recommendation-grid" class="vegetable-grid">
+                <!-- Recommended vegetables will be injected here -->
+            </div>
         </div>
     </div>
 
@@ -969,21 +1021,6 @@
                 <div class="charts-content">
                     <div class="chart-wrapper"><canvas id="daily-bar-chart"></canvas></div>
                 </div>
-            </div>
-        </div>
-
-        <div id="recommendation-section" class="category-section">
-            <div class="category-header">
-                <div class="category-header-title">
-                    <div class="category-name-wrapper">
-                        <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        <h2>建議攝取</h2>
-                    </div>
-                    <span class="recommendation-subtitle">30天內未攝取</span>
-                </div>
-            </div>
-            <div id="recommendation-grid" class="vegetable-grid">
-                <!-- Recommended vegetables will be injected here -->
             </div>
         </div>
     </main>
@@ -1822,7 +1859,7 @@ document.addEventListener('DOMContentLoaded', function() {
             dailyChartContainer.style.display = 'block';
             renderSingleDayCategoryChart(uniqueCategoryCounts);
         }
-        renderRecommendations();
+        renderRecommendations(endDate);
     }
 
     // 輔助函式，根據基底顏色和數量生成不同深淺的顏色陣列
@@ -1986,7 +2023,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return categoryIndexA - categoryIndexB;
             });
 
-            const TREEMAP_PAGE_SIZE = 20;
+            const TREEMAP_PAGE_SIZE = 40;
             let pages = [];
             let dataForChart;
 
@@ -2409,9 +2446,9 @@ document.addEventListener('DOMContentLoaded', function() {
         dailyBarChart = new Chart(ctx, config);
     }
 
-    function renderRecommendations() {
+    function renderRecommendations(referenceDateStr) {
         // 1. Get dates for the last 30 days based on the selected end date
-        const referenceDate = new Date(endDatePicker.value + 'T00:00:00Z');
+        const referenceDate = new Date(referenceDateStr + 'T00:00:00Z');
         const last30Days = [];
         for (let i = 0; i < 30; i++) {
             const d = new Date(referenceDate);
@@ -3110,14 +3147,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function showHomeScreen() {
         document.getElementById('home-screen').style.display = 'flex';
         document.querySelector('.main-content').style.display = 'none';
-        document.getElementById('footer-section').style.maxWidth = '900px';
+        const today = toLocalISOString(new Date());
+        renderRecommendations(today); // 在首頁顯示基於今日的建議
         renderCalendar(calendarDate.getFullYear(), calendarDate.getMonth());
     }
 
     function showMainView(dateStr) {
         document.getElementById('home-screen').style.display = 'none';
         document.querySelector('.main-content').style.display = 'block';
-        document.getElementById('footer-section').style.maxWidth = '1200px';
         
         startDatePicker.value = dateStr;
         endDatePicker.value = dateStr;
