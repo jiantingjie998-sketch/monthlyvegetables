@@ -374,6 +374,36 @@
             flex-wrap: wrap;
             gap: 0.75rem;
         }
+        .photo-thumbnail-wrapper {
+            position: relative;
+        }
+        .remove-photo-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.2s;
+            opacity: 1; /* 在觸控裝置上預設可見 */
+        }
+        .remove-photo-btn svg {
+            width: 12px;
+            height: 12px;
+            stroke: white;
+            stroke-width: 2.5;
+        }
+        .remove-photo-btn:hover {
+            background: var(--btn-reset-bg);
+            transform: scale(1.1);
+        }
         .photo-thumbnail {
             width: 60px;
             height: 60px;
@@ -433,6 +463,15 @@
             animation: pulse 1.5s infinite ease-in-out;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        @media (hover: hover) and (pointer: fine) {
+            .remove-photo-btn {
+                opacity: 0;
+            }
+            .photo-thumbnail-wrapper:hover .remove-photo-btn {
+                opacity: 1;
+            }
+        }
 
         /* 在支援 hover 的裝置上 (電腦)，預設隱藏 X 按鈕 */
         @media (hover: hover) and (pointer: fine) {
@@ -1566,17 +1605,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 渲染照片
+        const photoGallery = document.getElementById('photo-gallery-section');
+        photoGallery.innerHTML = ''; // 每次渲染前清空
         if (!isMultiDay && eatenState[startDate]?.photos?.length > 0) {
-            eatenState[startDate].photos.forEach(photoDataUrl => {
+            eatenState[startDate].photos.forEach((photoDataUrl, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'photo-thumbnail-wrapper';
+
                 const img = document.createElement('img');
                 img.src = photoDataUrl;
                 img.className = 'photo-thumbnail';
                 img.alt = '攝取紀錄照片';
-                img.addEventListener('click', () => {
-                    document.getElementById('photo-viewer-modal-image').src = photoDataUrl;
-                    photoViewerModal.style.display = 'flex';
-                });
-                document.getElementById('photo-gallery-section').appendChild(img);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-photo-btn';
+                removeBtn.title = '刪除照片';
+                removeBtn.dataset.index = index;
+                removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+
+                wrapper.appendChild(img);
+                wrapper.appendChild(removeBtn);
+                photoGallery.appendChild(wrapper);
             });
         }
         renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts);
@@ -2268,6 +2317,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- 資料匯出/匯入功能 ---
     function downloadDataAsJson() {
         const dataToSave = {
+            version: dataVersion, // 在備份中加入版本號
             vegetables: vegetables,
             eatenState: eatenState,
             categoryCollapseState: categoryCollapseState
@@ -2296,8 +2346,8 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                // 簡單驗證檔案結構
-                if (data && data.vegetables && data.eatenState && data.categoryCollapseState) {
+                // 驗證檔案結構，確保是有效的備份檔
+                if (data && data.vegetables && data.eatenState) {
                     showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", () => {
                         vegetables = data.vegetables;
                         eatenState = data.eatenState;
@@ -2309,7 +2359,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         closeModal(managementModal);
                     });
                 } else {
-                    alert('檔案格式不符，載入失敗。');
+                    alert('檔案格式不符或已損毀，載入失敗。');
                 }
             } catch (error) {
                 console.error("解析JSON檔案時出錯:", error);
@@ -2509,6 +2559,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // --- 照片檢視與刪除功能 ---
+    document.getElementById('photo-gallery-section').addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-photo-btn');
+        const thumbnail = e.target.closest('.photo-thumbnail');
+
+        if (removeBtn) {
+            // 點擊了刪除按鈕
+            const photoIndex = parseInt(removeBtn.dataset.index, 10);
+            if (!isNaN(photoIndex)) {
+                showConfirmation('確定要刪除這張照片嗎？此操作不會影響已記錄的蔬菜品項。', () => {
+                    if (eatenState[startDate]?.photos) {
+                        eatenState[startDate].photos.splice(photoIndex, 1);
+                        saveData();
+                        updateView();
+                    }
+                });
+            }
+        } else if (thumbnail) {
+            // 點擊了照片縮圖 (開啟檢視器)
+            document.getElementById('photo-viewer-modal-image').src = thumbnail.src;
+            photoViewerModal.style.display = 'flex';
+        }
+    });
 
     // --- 相機功能 ---
     document.getElementById('camera-btn').addEventListener('click', async () => {
