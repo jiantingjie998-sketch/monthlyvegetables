@@ -6,6 +6,7 @@
     <title>我的多元營養攝取</title>
     <!-- Chart.js Library for Pie Chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@2.3.0/dist/chartjs-chart-treemap.min.js"></script>
     <style>
         /* --- Google Fonts --- */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
@@ -40,16 +41,17 @@
             background-color: var(--bg-color);
             color: var(--text-primary);
             margin: 0;
-            padding: 0; /* 將 padding 移至 main-content */
+            padding: 0 1rem; /* 在 body 層級統一設定左右邊距 */
             display: flex;
             flex-direction: column;
             align-items: center;
+            box-sizing: border-box; /* 確保 padding 被包含在 body 的總寬度內 */
         }
         
         .main-content {
             width: 100%;
             max-width: 1200px;
-            padding: 1rem; /* 在此處控制主要內容的邊距 */
+            padding: 1rem 0; /* 移除左右 padding，改由 body 控制 */
             box-sizing: border-box; /* 確保 padding 不會影響總寬度 */
         }
 
@@ -79,6 +81,7 @@
             display: flex;
             align-items: center;
             justify-content: flex-end;
+            flex-wrap: wrap; /* 允許日期選擇器在空間不足時換行 */
             gap: 0.75rem;
         }
 
@@ -130,6 +133,7 @@
                     "dates dates  dates"; /* 確保日期選擇器橫跨所有欄位，使其正確對齊 */
             }
             .date-selector { 
+                justify-content: center; /* 在換行時讓日期選擇器整體置中 */
                 justify-content: flex-start;
             }
         }
@@ -501,14 +505,19 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            min-width: 0; /* 確保在 flex 容器中，圖表可以正確縮小，避免在窄螢幕上破版 */
         }
 
         .chart-wrapper {
             position: relative;
             width: 100%;
-            max-width: 320px;
+            height: 400px; /* 統一所有圖表的高度 */
+            max-width: none; /* 允許圖表填滿其容器寬度 */
             margin: 0 auto;
-            aspect-ratio: 1 / 1;
+        }
+
+        .treemap-wrapper {
+            /* 此樣式已合併至 .chart-wrapper，不再需要 */
         }
 
         @media (max-width: 992px) {
@@ -547,6 +556,11 @@
             position: relative;
         }
 
+        .modal-content.add-mode {
+            /* 在新增模式下，給予足夠的高度以容納下拉選單 */
+            min-height: 420px;
+        }
+
         #footer-section {
             display: flex;
             justify-content: space-between;
@@ -558,6 +572,16 @@
             width: 100%;
             max-width: 1200px;
             box-sizing: border-box;
+        }
+
+        @media (max-width: 480px) {
+            #footer-section {
+                flex-direction: column; /* 在小螢幕上垂直排列 */
+                align-items: center;
+                text-align: center;
+                gap: 0.5rem;
+                padding-bottom: 1rem;
+            }
         }
 
         .modal-content {
@@ -676,6 +700,10 @@
                 height: 18px;
                 stroke-width: 1.8; /* 讓縮小的圖示線條更清晰 */
             }
+            .summary-header {
+                flex-wrap: wrap; /* 在窄螢幕上允許標題和按鈕換行 */
+                gap: 0.75rem;
+            }
         }
 
         .modal-content h3 { margin-top: 0; color: var(--header-color); }
@@ -713,7 +741,7 @@
             width: 100%;
             max-width: 900px;
             margin: 2rem auto;
-            padding: 1rem; /* 調整內部留白 */
+            padding: 1rem 0; /* 移除左右 padding，改由 body 控制 */
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
@@ -731,7 +759,7 @@
             margin-bottom: 0.5rem;
         }
         .home-intro p {
-            font-size: 1rem;
+            font-size: 0.8rem; /* 調小二級 */
             color: var(--text-secondary);
             line-height: 1.6;
             max-width: 650px;
@@ -751,25 +779,43 @@
             align-items: center;
             margin-bottom: 1.5rem;
         }
-        #calendar-header h2 { color: var(--header-color); font-size: 1.75rem; margin: 0; }
+        #calendar-header h2 { color: var(--header-color); font-size: 1.5rem; margin: 0; }
         #calendar-header .btn { background-color: var(--accent-color); color: var(--text-primary); font-weight: bold; padding: 0.5rem 1rem; }
         #calendar-weekdays, #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
         #calendar-weekdays div { font-weight: 700; color: var(--text-secondary); font-size: 0.85rem; padding-bottom: 0.5rem; }
         .day-cell {
             aspect-ratio: 1 / 1;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-weight: 500;
             position: relative;
             border: 2px solid transparent;
+            padding: 2px;
+            box-sizing: border-box;
+        }
+        .day-number {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 0.8em;
+            font-weight: 500;
+            color: #b0b0b0; /* 刷淡日期數字顏色 */
+            line-height: 1;
+        }
+        .day-count {
+            font-size: 1.2em; /* 再縮小字體 */
+            font-weight: 600; /* 降低粗細 */
+            color: rgba(74, 124, 89, 0.85); /* 顏色刷淡 */
+            line-height: 1;
+            transform: translateY(5px); /* 再稍微向下偏移 */
         }
         .day-cell:not(.empty-cell):hover { background-color: #eef1ee; }
-        .day-cell.today { border-color: var(--header-color); color: var(--header-color); }
-        .day-cell.has-data { background-color: #e4ede4; font-weight: 700; }
+        .day-cell.today { border-color: var(--accent-color); }
+        .day-cell.today .day-number { color: var(--header-color); font-weight: 700; }
+        .day-cell.has-data { background-color: #e4ede4; }
         .day-cell.has-data.today { background-color: #d8e2d8; }
         .day-cell.empty-cell { cursor: default; }
         
@@ -838,20 +884,20 @@
         </div>
 
         <div id="charts-grid" class="charts-container">
-            <div id="category-chart-section" class="summary-section">
-                <div class="summary-header">
-                    <h3>攝取種類</h3>
-                </div>
-                <div class="charts-content">
-                    <div class="chart-wrapper"><canvas id="summary-pie-chart-1"></canvas></div>
-                </div>
-            </div>
             <div id="unique-items-chart-section" class="summary-section">
                 <div class="summary-header">
                     <h3>攝取大類</h3>
                 </div>
                 <div class="charts-content">
                     <div class="chart-wrapper"><canvas id="summary-pie-chart-3"></canvas></div>
+                </div>
+            </div>
+            <div id="treemap-chart-section" class="summary-section">
+                <div class="summary-header">
+                    <h3>攝取品項</h3>
+                </div>
+                <div class="charts-content">
+                    <div class="chart-wrapper"><canvas id="treemap-chart"></canvas></div>
                 </div>
             </div>
             <div id="nutrient-chart-section" class="summary-section">
@@ -870,7 +916,7 @@
                     <div class="chart-wrapper"><canvas id="summary-pie-chart-4"></canvas></div>
                 </div>
             </div>
-            <div id="daily-chart-container" class="summary-section">
+            <div id="daily-chart-container" class="summary-section" style="display: none;">
                 <div class="summary-header">
                     <h3>攝取分析</h3>
                 </div>
@@ -1019,7 +1065,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    let cameraStream = null; // 用於儲存相機串流
+    let cameraStream = null;
     // Chart.js Plugin to draw text inside the doughnut chart
     const doughnutTextPlugin = {
         id: 'doughnutText',
@@ -1675,11 +1721,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const dailyChartContainer = document.getElementById('daily-chart-container');
 
         if (eatenList.length === 0) {
-            dailyChartContainer.classList.add('visible-chart');
+            dailyChartContainer.style.display = 'block';
             renderPlaceholderBarChart();
         } else if (isMultiDay) {
             // 多日檢視
-            dailyChartContainer.classList.add('visible-chart');
+            dailyChartContainer.style.display = 'block';
             const dailyCategoryCounts = {};
             const allCategoriesInRange = new Set();
 
@@ -1704,7 +1750,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderMultiDayTrendChart(dailyCategoryCounts, sortedCategories);
         } else { 
             // 單日檢視
-            dailyChartContainer.classList.add('visible-chart');
+            dailyChartContainer.style.display = 'block';
             renderSingleDayCategoryChart(uniqueCategoryCounts);
         }
         renderRecommendations();
@@ -1778,8 +1824,11 @@ document.addEventListener('DOMContentLoaded', function() {
             type: 'doughnut',
             data: chartData,
             options: {
+                layout: {
+                    padding: 15
+                },
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // 確保圖表填滿容器，不維持原始長寬比
                 cutout: '70%', // 圓環厚度
                 plugins: {
                     title: {
@@ -1835,54 +1884,110 @@ document.addEventListener('DOMContentLoaded', function() {
             '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
         ];
 
-        // 圖表1: 品項分佈 (攝取次數)
-        const vegNameToCategoryMap = {};
-        Object.keys(vegetables).forEach(category => {
-            vegetables[category].forEach(veg => {
-                vegNameToCategoryMap[veg.name] = category;
+        // 圖表1: 攝取品項 (Treemap)
+        const hasItemData = Object.keys(itemCounts).length > 0;
+        const ctx1 = document.getElementById('treemap-chart').getContext('2d');
+        if (hasItemData) {
+            const vegNameToCategoryMap = {};
+            Object.keys(vegetables).forEach(category => {
+                vegetables[category].forEach(veg => {
+                    vegNameToCategoryMap[veg.name] = category;
+                });
             });
-        });
 
-        const sortedItems = Object.entries(itemCounts)
-            .map(([name, count]) => ({
-                name,
-                count,
-                category: vegNameToCategoryMap[name] || ''
-            }))
-            .sort((a, b) => b.count - a.count); // 依攝取次數由高到低排序
+            const treemapData = Object.entries(itemCounts).map(([name, count]) => ({
+                name: name,
+                count: count, // 保留原始次數，用於顯示
+                // 使用對數轉換值來計算面積，讓小區塊也能被看見
+                areaValue: Math.log(count + 1) + 1, 
+                category: vegNameToCategoryMap[name] || '其他'
+            }));
 
-        const itemLabels = sortedItems.map(item => `${item.name} (${item.count})`);
-        const itemData = sortedItems.map(item => item.count);
+            // 排序資料以優化視覺分組
+            treemapData.sort((a, b) => {
+                // 1. 主要排序：依攝取次數由高到低
+                if (b.count !== a.count) {
+                    return b.count - a.count;
+                }
+                // 2. 次要排序：當次數相同時，依預設的分類順序排列
+                const categoryIndexA = categoryOrder.indexOf(a.category);
+                const categoryIndexB = categoryOrder.indexOf(b.category);
+                return categoryIndexA - categoryIndexB;
+            });
 
-        // 為圖表1生成顏色：相同類別的品項顏色相近但不同
-        const itemsByCategory = {};
-        sortedItems.forEach(item => {
-            if (item.category) {
-                if (!itemsByCategory[item.category]) itemsByCategory[item.category] = [];
-                itemsByCategory[item.category].push(`${item.name} (${item.count})`);
-            }
-        });
-        const itemColorMap = {};
-        Object.keys(itemsByCategory).forEach(category => {
-            const baseColorVar = categoryColorVars[category];
-            const baseColor = baseColorVar ? computedStyle.getPropertyValue(baseColorVar).trim() : '#cccccc';
-            const items = itemsByCategory[category];
-            const shades = generateColorShades(baseColor, items.length);
-            items.forEach((item, index) => itemColorMap[item] = shades[index]);
-        });
-        const itemColors = itemLabels.map(label => itemColorMap[label] || '#cccccc');
+            // 建立顏色對應表，讓同類別有不同深淺
+            const itemsByCategory = {};
+            treemapData.forEach(item => {
+                const category = item.category;
+                if (!itemsByCategory[category]) {
+                    itemsByCategory[category] = [];
+                }
+                itemsByCategory[category].push(item);
+            });
 
-        const totalUniqueItems = itemLabels.length;
-        const itemCenterText = { main: totalUniqueItems, sub: '' };
-        const itemConfig = createChartConfig(
-            '攝取種類',
-            itemLabels, 
-            itemData,
-            itemColors,
-            itemCenterText
-        );
-        const ctx1 = document.getElementById('summary-pie-chart-1').getContext('2d');
-        summaryPieChart1 = new Chart(ctx1, itemConfig);
+            const itemColorMap = {};
+            Object.keys(itemsByCategory).forEach(category => {
+                const items = itemsByCategory[category];
+                // 依攝取次數排序，讓顏色漸層有意義
+                items.sort((a, b) => b.count - a.count);
+                
+                const baseColorVar = categoryColorVars[category];
+                const baseColor = baseColorVar ? computedStyle.getPropertyValue(baseColorVar).trim() : '#cccccc';
+                
+                const shades = generateColorShades(baseColor, items.length);
+                items.forEach((item, index) => itemColorMap[item.name] = shades[index]);
+            });
+
+            summaryPieChart1 = new Chart(ctx1, {
+                type: 'treemap',
+                data: {
+                    datasets: [{
+                        tree: treemapData,
+                        key: 'areaValue', // 使用轉換後的值來決定面積
+                        borderWidth: 0, // 移除框線
+                        spacing: 0,     // 移除間距
+                        labels: {
+                            display: true,
+                            color: 'white',
+                            font: { size: 12, weight: '500', lineHeight: 1.4 },
+                            formatter: (ctx) => {
+                                const dataItem = ctx.raw._data;
+                                // 顯示原始的攝取次數，而不是 areaValue
+                                return [dataItem.name, dataItem.count];
+                            }
+                        },
+                        backgroundColor: (ctx) => {
+                            if (ctx.type !== 'data') return 'transparent';
+                            const itemName = ctx.raw._data.name;
+                            return itemColorMap[itemName] || '#cccccc';
+                        }
+                    }]
+                },
+                options: {
+                    layout: {
+                        padding: 15
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                // 在提示框中也顯示原始的攝取次數
+                                label: (ctx) => ` ${ctx.raw._data.name}: ${ctx.raw._data.count}`
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            // 如果沒有資料，可以選擇清空畫布或顯示提示
+            ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
+            ctx1.font = "16px 'Noto Sans TC'";
+            ctx1.fillStyle = 'grey';
+            ctx1.textAlign = 'center';
+            ctx1.fillText('無攝取品項資料', ctx1.canvas.width / 2, ctx1.canvas.height / 2);
+        }
 
         // 圖表2: 營養素分佈
         const sortedNutrients = Object.entries(nutrientCounts)
@@ -1976,6 +2081,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 5, right: 15, bottom: 5, left: 10 }
+                },
                 scales: {
                     x: {
                         stacked: true,
@@ -2071,6 +2179,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 5, right: 15, bottom: 5, left: 10 }
+                },
                 scales: {
                     x: {
                         beginAtZero: true,
@@ -2371,8 +2482,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const dataToSave = {
             version: dataVersion, // 在備份中加入版本號
             vegetables: vegetables,
-            eatenState: eatenState,
-            categoryCollapseState: categoryCollapseState
+            eatenState: eatenState
         };
 
         const dataStr = JSON.stringify(dataToSave, null, 2); // 格式化JSON，方便閱讀
@@ -2399,7 +2509,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const data = JSON.parse(e.target.result);
                 // 驗證檔案結構，確保是有效的備份檔
-                if (data && data.vegetables && data.eatenState) {
+                if (data && data.vegetables && data.eatenState) { // 保持與匯出結構對稱
                     showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", () => {
                         vegetables = data.vegetables;
                         eatenState = data.eatenState;
@@ -2414,11 +2524,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('檔案格式不符或已損毀，載入失敗。');
                 }
             } catch (error) {
-                console.error("解析JSON檔案時出錯:", error);
+                console.error("解析 JSON 檔案時出錯:", error);
                 alert('讀取檔案時發生錯誤，請確認檔案為有效的 JSON 格式。');
-            } finally {
-                // 重置檔案輸入，以便可以再次選擇同一個檔案
-                event.target.value = '';
             }
         };
         reader.readAsText(file);
@@ -2457,7 +2564,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.target.closest('.delete-btn')) {
                 showConfirmation(`確定要刪除「${name}」嗎？`, () => {
                     vegetables[category] = vegetables[category].filter(v => v.name !== name);
-                    Object.keys(eatenState).forEach(date => { delete eatenState[date][name]; });
+                    // 從所有日期的攝取紀錄中移除此品項
+                    Object.keys(eatenState).forEach(date => {
+                        if (eatenState[date]?.items) {
+                            delete eatenState[date].items[name];
+                        }
+                    });
                     saveData();
                     updateView();
                 });
@@ -2887,25 +2999,38 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let day = 1; day <= daysInMonth; day++) {
             const dayCell = document.createElement('div');
             dayCell.className = 'day-cell';
-            dayCell.textContent = day;
+
+            const dayNumberEl = document.createElement('span');
+            dayNumberEl.className = 'day-number';
+            dayNumberEl.textContent = day;
+            dayCell.appendChild(dayNumberEl);
             
             const date = new Date(year, month, day);
             const dateString = toLocalISOString(date);
             dayCell.dataset.date = dateString;
-
-            if (dateString === todayString) {
-                dayCell.classList.add('today');
-            }
-
-            if (eatenState[dateString] && Object.keys(eatenState[dateString].items || {}).length > 0) {
-                dayCell.classList.add('has-data');
-            }
+            dayCell.innerHTML = `<span class="day-number">${day}</span>`; // 預設只顯示日期
 
             dayCell.addEventListener('click', () => {
                 showMainView(dateString);
             });
 
             calendarGrid.appendChild(dayCell);
+        }
+
+        // 第二次遍歷，填入計數（這樣可以避免在第一個迴圈中複雜的 DOM 操作）
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateString = toLocalISOString(new Date(year, month, day));
+            const dayCell = calendarGrid.querySelector(`.day-cell[data-date="${dateString}"]`);
+            if (!dayCell) continue;
+
+            if (dateString === todayString) dayCell.classList.add('today');
+
+            const dailyData = eatenState[dateString];
+            const count = dailyData ? Object.keys(dailyData.items || {}).length : 0;
+            if (count > 0) {
+                dayCell.classList.add('has-data');
+                dayCell.innerHTML += `<span class="day-count">${count}</span>`;
+            }
         }
     }
 
