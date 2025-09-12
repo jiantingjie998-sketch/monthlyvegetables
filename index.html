@@ -1719,27 +1719,48 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // 渲染照片 (僅在單日模式)
+        // 渲染照片 (單日或多日)
         const photoGallery = document.getElementById('photo-gallery-section');
         photoGallery.innerHTML = ''; // 每次渲染前清空
-        if (!isMultiDay && eatenState[startDate]?.photos?.length > 0) {
-            eatenState[startDate].photos.forEach((photo, index) => {
+
+        const allPhotosInRange = [];
+        datesInRange.forEach(dateStr => {
+            const dailyPhotos = eatenState[dateStr]?.photos || [];
+            dailyPhotos.forEach((photo, index) => {
+                allPhotosInRange.push({
+                    ...photo,
+                    date: dateStr,
+                    originalIndex: index // 保留原始索引，用於單日模式下的刪除
+                });
+            });
+        });
+
+        // 依日期排序
+        allPhotosInRange.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        if (allPhotosInRange.length > 0) {
+            allPhotosInRange.forEach(photoData => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'photo-thumbnail-wrapper';
 
                 const img = document.createElement('img');
-                img.src = photo.url;
+                img.src = photoData.url;
                 img.className = 'photo-thumbnail';
-                img.alt = '攝取紀錄照片';
-
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'remove-photo-btn';
-                removeBtn.title = '刪除照片';
-                removeBtn.dataset.index = index;
-                removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+                img.alt = `攝取紀錄照片 (${photoData.date})`;
+                img.title = photoData.date; // 滑鼠懸停時顯示日期
 
                 wrapper.appendChild(img);
-                wrapper.appendChild(removeBtn);
+
+                // 僅在單日模式下顯示刪除按鈕
+                if (!isMultiDay) {
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-photo-btn';
+                    removeBtn.title = '刪除照片';
+                    removeBtn.dataset.index = photoData.originalIndex;
+                    removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+                    wrapper.appendChild(removeBtn);
+                }
+                
                 photoGallery.appendChild(wrapper);
             });
         }
@@ -2048,12 +2069,38 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         } else {
             paginationContainer.innerHTML = ''; // 沒有資料時也清空分頁點
-            // 如果沒有資料，可以選擇清空畫布或顯示提示
-            ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
-            ctx1.font = "16px 'Noto Sans TC'";
-            ctx1.fillStyle = 'grey';
-            ctx1.textAlign = 'center';
-            ctx1.fillText('無攝取品項資料', ctx1.canvas.width / 2, ctx1.canvas.height / 2);
+            const placeholderColor = computedStyle.getPropertyValue('--placeholder-bg').trim() || '#eaeaea';
+
+            summaryPieChart1 = new Chart(ctx1, {
+                type: 'treemap',
+                data: {
+                    datasets: [{
+                        tree: [{ value: 1 }], // Simple data for one block
+                        key: 'value',
+                        backgroundColor: placeholderColor,
+                        labels: {
+                            display: true,
+                            align: 'center',
+                            position: 'center',
+                            color: 'grey',
+                            font: { size: 16, weight: '500' },
+                            formatter: () => '無攝取品項資料'
+                        }
+                    }]
+                },
+                options: {
+                    layout: {
+                        padding: 15
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    animation: false
+                }
+            });
         }
 
         // --- 為 Treemap 圖表加上滑動手勢 ---
