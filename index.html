@@ -2705,7 +2705,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const dataToSave = {
             version: dataVersion, // 在備份中加入版本號
             vegetables: vegetables,
-            eatenState: eatenState
+            eatenState: eatenState,
+            categoryCollapseState: categoryCollapseState,
+            recommendationCollapseState: recommendationCollapseState
         };
 
         const dataStr = JSON.stringify(dataToSave, null, 2); // 格式化JSON，方便閱讀
@@ -2732,11 +2734,13 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const data = JSON.parse(e.target.result);
                 // 驗證檔案結構，確保是有效的備份檔
-                if (data && data.vegetables && data.eatenState) { // 保持與匯出結構對稱
+                if (data && data.vegetables && data.eatenState) { // 只需驗證核心資料是否存在
                     showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", () => {
                         vegetables = data.vegetables;
                         eatenState = data.eatenState;
-                        categoryCollapseState = data.categoryCollapseState;
+                        // 安全地載入摺疊狀態，若備份檔中不存在則使用預設值
+                        categoryCollapseState = data.categoryCollapseState || {};
+                        recommendationCollapseState = data.recommendationCollapseState !== undefined ? data.recommendationCollapseState : null;
                         
                         saveData(); // 將新資料存入 localStorage
                         updateView(); // 重新渲染畫面
