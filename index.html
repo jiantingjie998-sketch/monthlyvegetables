@@ -2702,10 +2702,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // --- 資料匯出/匯入功能 ---
     function downloadDataAsJson() {
+        // 為了確保資料完整性，特別是包含 Base64 照片的 photos 陣列，
+        // 我們手動建立一個新的物件來進行序列化，而不是直接 stringify 原始的 eatenState。
+        const cleanEatenState = {};
+        Object.keys(eatenState).forEach(date => {
+            cleanEatenState[date] = {
+                items: eatenState[date].items || {},
+                photos: eatenState[date].photos || []
+            };
+        });
+
         const dataToSave = {
             version: dataVersion, // 在備份中加入版本號
             vegetables: vegetables,
-            eatenState: eatenState,
+            // 使用手動清理過的 eatenState 進行備份
+            eatenState: cleanEatenState,
             categoryCollapseState: categoryCollapseState,
             recommendationCollapseState: recommendationCollapseState
         };
@@ -2737,7 +2748,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data && data.vegetables && data.eatenState) { // 只需驗證核心資料是否存在
                     showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", () => {
                         vegetables = data.vegetables;
-                        eatenState = data.eatenState;
+                        
+                        // --- 資料結構遷移：確保上傳的 eatenState 轉換為新格式 ---
+                        const importedEatenState = data.eatenState;
+                        eatenState = {}; // 清空目前的狀態
+                        Object.keys(importedEatenState).forEach(date => {
+                            const entry = importedEatenState[date];
+                            // 如果是舊格式 (沒有 items 和 photos 屬性)，則進行轉換
+                            if (entry && !entry.hasOwnProperty('items') && !entry.hasOwnProperty('photos')) {
+                                eatenState[date] = { items: entry, photos: [] };
+                            } else { // 如果是新格式或空物件，直接使用
+                                eatenState[date] = {
+                                    items: entry.items || {},
+                                    photos: entry.photos || [] // 確保 photos 欄位總是存在
+                                };
+                            }
+                        });
+
                         // 安全地載入摺疊狀態，若備份檔中不存在則使用預設值
                         categoryCollapseState = data.categoryCollapseState || {};
                         recommendationCollapseState = data.recommendationCollapseState !== undefined ? data.recommendationCollapseState : null;
@@ -3255,7 +3282,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (dateString === todayString) dayCell.classList.add('today');
 
             const dailyData = eatenState[dateString];
-            const count = dailyData ? Object.keys(dailyData.items || {}).length : 0;
+            // 修正計數邏輯：只計算值為 true 的項目
+            const items = dailyData?.items || {};
+            const count = Object.values(items).filter(isEaten => isEaten === true).length;
             if (count > 0) {
                 dayCell.classList.add('has-data');
                 dayCell.innerHTML += `<span class="day-count">${count}</span>`;
