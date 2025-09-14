@@ -2736,10 +2736,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // 我們手動建立一個新的物件來進行序列化，而不是直接 stringify 原始的 eatenState。
         const cleanEatenState = {};
         Object.keys(eatenState).forEach(date => {
-            cleanEatenState[date] = {
-                items: eatenState[date].items || {},
-                photos: eatenState[date].photos || []
-            };
+            const dailyEntry = eatenState[date];
+            // 增加對 dailyEntry 是否存在的檢查，確保即使某天紀錄為 null 也不會出錯
+            if (dailyEntry) {
+                cleanEatenState[date] = {
+                    items: dailyEntry.items || {},
+                    photos: dailyEntry.photos || []
+                };
+            }
         });
 
         const dataToSave = {
