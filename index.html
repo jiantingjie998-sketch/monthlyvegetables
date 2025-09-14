@@ -2790,13 +2790,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             const entry = importedEatenState[date];
                             // 如果是舊格式 (沒有 items 和 photos 屬性)，則進行轉換
                             if (entry && !entry.hasOwnProperty('items') && !entry.hasOwnProperty('photos')) {
-                                eatenState[date] = { items: entry, photos: [] };
-                            } else { // 如果是新格式或空物件，直接使用
+                                eatenState[date] = { items: entry, photos: [] }; // 舊格式
+                            } else if (entry) { // 新格式，且 entry 存在 (不為 null)
                                 eatenState[date] = {
                                     items: entry.items || {},
                                     photos: entry.photos || [] // 確保 photos 欄位總是存在
                                 };
                             }
+                            // 如果 entry 是 null 或 undefined，則直接忽略，避免產生錯誤
                         });
 
                         // 安全地載入摺疊狀態，若備份檔中不存在則使用預設值
