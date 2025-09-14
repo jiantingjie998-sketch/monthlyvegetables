@@ -3,30 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的多元營養攝取 (版面優化)</title>
+    <title>我的多元營養攝取</title>
     <!-- Chart.js Library for Pie Chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@2.3.0/dist/chartjs-chart-treemap.min.js"></script>
     <style>
         /* --- Google Fonts --- */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
 
         /* --- 整體樣式與新色盤 --- */
         :root {
-            --bg-color: #f9f7f4;
-            --text-primary: #5c5c5c;
-            --text-secondary: #7a7a7a;
-            --header-color: #002B5C; /* 深海軍藍 */
-            --accent-color: #d4c8be; /* 柔和米色 */
-            --btn-reset-bg: #c87e7e; /* 灰粉色 */
-            --btn-manage-bg: #476b9e; /* 適中的專業藍 */
+            --bg-color: #f7f9f7; /* 清新淺綠白 */
+            --text-primary: #333d33; /* 深綠灰色 */
+            --text-secondary: #6c757d; /* 柔和灰 */
+            --header-color: #2a4b37; /* 優雅森林綠 */
+            --accent-color: #a9bca9; /* 柔和鼠尾草綠 */
+            --btn-save-bg: #4a7c59; /* 儲存按鈕綠 */
+            --btn-reset-bg: #c17c74; /* 刪除按鈕紅 */
+            --btn-manage-bg: #6a828f; /* 管理按鈕藍灰 */
+            --btn-cancel-bg: #a0a0a0; /* 取消按鈕灰 */
             --placeholder-bg: #eaeaea;
 
-            /* Category Colors (Updated) */
-            --leafy-color: #3d5a49;      /* 深綠 */
-            --spice-color: #d16a67;      /* 紅色系 */
-            --root-color: #c57c56;       /* 橘色 */
-            --gourd-bean-color: #8a9a5b; /* 淺綠 */
-            --mushroom-color: #8b6b5b;   /* 土色 */
+            /* Category Colors (Updated for elegance) */
+            --leafy-color: #4f7553;      /* 葉菜 - 自然綠 */
+            --spice-color: #d18c67;      /* 辛香料 - 暖陶色 */
+            --root-color: #b57f5b;       /* 根莖 - 大地橘 */
+            --gourd-bean-color: #9a9a5b; /* 瓜果 - 黃綠色 */
+            --mushroom-color: #8b7d75;   /* 菌菇 - 灰褐色 */
         }
 
         html {
@@ -38,32 +41,31 @@
             background-color: var(--bg-color);
             color: var(--text-primary);
             margin: 0;
-            padding: 0; /* 將 padding 移至 main-content */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 0;
         }
         
         .main-content {
             width: 100%;
             max-width: 1200px;
-            padding: 1rem; /* 在此處控制主要內容的邊距 */
+            padding: 1rem;
             box-sizing: border-box; /* 確保 padding 不會影響總寬度 */
+            margin: 0 auto;
         }
 
         /* --- 頂部容器與日期選擇器 --- */
         .top-container {
             display: grid;
-            grid-template-areas: "header dates manage";
-            grid-template-columns: 1fr auto auto;
+            grid-template-areas: "back header dates";
+            grid-template-columns: auto 1fr auto;
             justify-content: space-between;
-            align-items: center;
+            align-items: center; /* 確保所有項目在垂直方向上置中對齊 */
             width: 100%;
             margin-bottom: 1rem;
             gap: 0.75rem;
         }
         .header {
             grid-area: header;
+            justify-self: start; /* 讓標題靠左 */
         }
         .header h1 {
             margin: 0;
@@ -76,6 +78,7 @@
             display: flex;
             align-items: center;
             justify-content: flex-end;
+            flex-wrap: wrap; /* 允許日期選擇器在空間不足時換行 */
             gap: 0.75rem;
         }
 
@@ -97,19 +100,33 @@
             min-width: 140px;
         }
 
-        #management-btn {
-            grid-area: manage;
-        }
+        #back-to-home-btn {
+            grid-area: back;
+    background-color: transparent;
+    box-shadow: none; /* 移除陰影 */
+}
+
+/* 為返回按鈕設定獨立的 hover 效果和圖示顏色 */
+#back-to-home-btn:hover {
+    background-color: #e4ede4; /* 加上淡淡的 hover 背景色，提供視覺回饋 */
+}
+
+#back-to-home-btn svg {
+    stroke: var(--header-color); /* 設定圖示顏色 */
+    width: 30px; /* 放大圖示尺寸 */
+    height: 30px; /* 放大圖示尺寸 */
+    stroke-width: 1.8; /* 加粗圖示線條 */
+}
 
         @media (max-width: 600px) {
             .top-container {
-                grid-template-columns: 1fr auto;
+                grid-template-columns: auto 1fr; /* 返回按鈕佔用所需空間，標題佔用剩餘空間 */
                 grid-template-areas: 
-                    "header manage"
-                    "dates dates";
+                    "back  header"
+                    "dates dates"; /* 日期選擇器橫跨兩欄 */
             }
             .date-selector { 
-                justify-content: flex-start;
+                justify-content: flex-start; /* 在換行時讓日期選擇器靠左對齊 */
             }
         }
 
@@ -175,7 +192,7 @@
         /* --- 蔬菜格線容器 (可折疊) --- */
         .vegetable-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
             gap: 0.75rem;
             width: 100%;
             margin-top: 1rem;
@@ -190,6 +207,27 @@
             opacity: 0;
         }
 
+        /* --- 建議攝取區塊的特殊樣式 --- */
+        /* 寬螢幕：最多顯示3排，超出則滾動 */
+        #recommendation-section:not(.collapsed) #recommendation-grid {
+            max-height: 420px; /* 約3排蔬菜的高度 */
+            overflow-y: auto;
+            padding-right: 8px; /* 為滾動條留出空間 */
+        }
+
+        /* 窄螢幕：全部展開 */
+        @media (max-width: 768px) {
+            #recommendation-section:not(.collapsed) #recommendation-grid {
+                max-height: 2000px; /* 恢復足夠大的高度以全部顯示 */
+                overflow-y: hidden; /* 在手機上隱藏滾動條 */
+                padding-right: 0;
+            }
+        }
+
+        /* --- 建議攝取區塊標題的特殊樣式 --- */
+        #recommendation-section h2 {
+            font-size: 1.5rem; /* 與月曆標題字級一致 */
+        }
 
         /* --- 單一蔬菜格 --- */
         .veg-item {
@@ -205,7 +243,7 @@
         .veg-item:hover { transform: translateY(-4px); box-shadow: 0 6px 12px rgba(0,0,0,0.06); }
         .veg-image-container { 
             width: 100%; 
-            height: 90px; 
+            height: 80px; 
             background-color: #ffffff; /* 將底色改為白色 */
         }
         .veg-image { 
@@ -234,13 +272,13 @@
         }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.07); }
         .btn-reset { background-color: var(--btn-reset-bg); }
-        .btn-reset:hover { background-color: #b86e6e; }
-        .btn-save { background-color: #4a6854; }
-        .btn-save:hover { background-color: #3e5646; }
-        .btn-cancel { background-color: #9e9e9e; }
-        .btn-cancel:hover { background-color: #8a8a8a; }
+        .btn-reset:hover { background-color: #ad6b63; }
+        .btn-save { background-color: var(--btn-save-bg); }
+        .btn-save:hover { background-color: #3e694b; }
+        .btn-cancel { background-color: var(--btn-cancel-bg); }
+        .btn-cancel:hover { background-color: #8c8c8c; }
         .btn-select { background-color: var(--btn-manage-bg); }
-        .btn-select:hover { background-color: #3a5885; }
+        .btn-select:hover { background-color: #586f7a; }
 
         .btn-icon {
             width: 40px;
@@ -346,16 +384,116 @@
             min-width: 0; /* 確保列表可以正確換行 */
         }
 
+        /* 在窄螢幕下限制成果區高度，超出則滾動 */
+        @media (max-width: 768px) {
+            #summary-list {
+                /* 15rem 約為 5 列的高度 (240px) */
+                max-height: 15rem; 
+                overflow-y: auto;
+                /* 為滾動條增加一些空間，避免內容被遮擋 */
+                padding-right: 0.5rem;
+                /* 美化滾動條 (可選，但能提升體驗) */
+                scrollbar-width: thin;
+                scrollbar-color: var(--accent-color) var(--bg-color);
+            }
+            #summary-list::-webkit-scrollbar {
+                width: 6px;
+            }
+            #summary-list::-webkit-scrollbar-track {
+                background: transparent; /* 讓軌道透明 */
+            }
+            #summary-list::-webkit-scrollbar-thumb {
+                background-color: var(--accent-color);
+                border-radius: 6px;
+            }
+        }
+
+        /* --- 照片成果區 --- */
+        #photo-gallery-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        /* 當照片區有內容時，才加上上邊距，避免沒有照片時出現多餘空白 */
+        #photo-gallery-section:not(:empty) {
+            margin-top: 1rem;
+        }
+        .photo-thumbnail-wrapper {
+            position: relative;
+        }
+        .remove-photo-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.2s;
+            opacity: 1; /* 在觸控裝置上預設可見 */
+        }
+        .remove-photo-btn svg {
+            width: 12px;
+            height: 12px;
+            stroke: white;
+            stroke-width: 2.5;
+        }
+        .remove-photo-btn:hover {
+            background: var(--btn-reset-bg);
+            transform: scale(1.1);
+        }
+        .photo-thumbnail {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 1px solid #ddd;
+        }
         .summary-item {
             list-style: none;
             background: #f4f4f4;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.4rem;
-            padding-right: 0.6rem;
+            padding: 0.4rem 28px 0.4rem 0.6rem; /* 調整右側 padding，始終為按鈕保留空間 */
             border-radius: 6px;
             font-size: 0.85rem;
+            position: relative; /* 為了定位刪除按鈕 */
+            transition: background-color 0.2s;
+        }
+        .summary-item .remove-btn {
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 1; /* 在觸控裝置上預設可見 */
+            transition: opacity 0.2s; /* 為透明度加上漸變效果 */
+        }
+        .summary-item .remove-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-secondary);
+            transition: stroke 0.2s;
+        }
+        .summary-item .remove-btn:hover svg {
+            stroke: var(--btn-reset-bg);
         }
         .summary-item img { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; }
         
@@ -369,6 +507,27 @@
             animation: pulse 1.5s infinite ease-in-out;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        @media (hover: hover) and (pointer: fine) {
+            .remove-photo-btn {
+                opacity: 0;
+            }
+            .photo-thumbnail-wrapper:hover .remove-photo-btn {
+                opacity: 1;
+            }
+        }
+
+        /* 在支援 hover 的裝置上 (電腦)，預設隱藏 X 按鈕 */
+        @media (hover: hover) and (pointer: fine) {
+            .summary-item .remove-btn {
+                opacity: 0; /* 預設透明 */
+                pointer-events: none; /* 隱藏時不可點擊 */
+            }
+            .summary-item:hover .remove-btn {
+                opacity: 1; /* Hover 時浮現 */
+                pointer-events: auto;
+            }
+        }
         
         /* --- 圖表區塊 --- */
         .charts-container {
@@ -386,14 +545,42 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            min-width: 0; /* 確保在 flex 容器中，圖表可以正確縮小，避免在窄螢幕上破版 */
         }
 
         .chart-wrapper {
             position: relative;
             width: 100%;
-            max-width: 320px;
+            height: 400px; /* 統一所有圖表的高度 */
+            max-width: none; /* 允許圖表填滿其容器寬度 */
             margin: 0 auto;
-            aspect-ratio: 1 / 1;
+        }
+        .chart-wrapper canvas {
+            touch-action: pan-y; /* 允許垂直滾動，但攔截水平滑動以用於切換頁面 */
+        }
+
+        .pagination-container {
+            text-align: center;
+            padding-top: 10px;
+        }
+
+        .pagination-dot {
+            cursor: pointer;
+            height: 10px;
+            width: 10px;
+            margin: 0 4px;
+            background-color: #ccc;
+            border-radius: 50%;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination-dot.active {
+            background-color: var(--btn-save-bg);
+        }
+
+        .treemap-wrapper {
+            /* 此樣式已合併至 .chart-wrapper，不再需要 */
         }
 
         @media (max-width: 992px) {
@@ -432,6 +619,11 @@
             position: relative;
         }
 
+        .modal-content.add-mode {
+            /* 在新增模式下，給予足夠的高度以容納下拉選單 */
+            min-height: 420px;
+        }
+
         #footer-section {
             display: flex;
             justify-content: space-between;
@@ -440,6 +632,21 @@
             padding: 1rem;
             font-size: 0.85rem;
             color: var(--text-secondary);
+            width: 100%;
+            max-width: 1200px; /* 與主內容區塊寬度一致 */
+            box-sizing: border-box;
+            margin-left: auto; /* 水平置中以對齊上方區塊 */
+            margin-right: auto; /* 水平置中以對齊上方區塊 */
+        }
+
+        @media (max-width: 480px) {
+            #footer-section {
+                flex-direction: column; /* 在小螢幕上垂直排列 */
+                align-items: center;
+                text-align: center;
+                gap: 0.5rem;
+                padding-bottom: 1rem;
+            }
         }
 
         .modal-content {
@@ -472,6 +679,58 @@
             text-align: left;
             line-height: 1.5;
         }
+        /* --- 相機 Modal --- */
+        #camera-modal {
+            background-color: rgba(0,0,0,0.85);
+            padding: 0;
+        }
+        #camera-modal .modal-content {
+            background: transparent;
+            box-shadow: none;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            padding: 0;
+            justify-content: center;
+        }
+        #camera-view {
+            width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        #camera-controls {
+            position: absolute;
+            bottom: 2rem;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between; /* 改為 space-between 以獲得更好的對齊 */
+            align-items: center;
+            padding: 0 2rem; /* 增加左右邊距，讓按鈕不會太靠邊 */
+        }
+        /* 統一相機控制中的圖示按鈕樣式 */
+        #camera-controls .btn-icon {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(40, 40, 40, 0.7);
+            border-radius: 50%; /* 讓按鈕變圓形 */
+        }
+        /* 加大圖示尺寸 */
+        #camera-controls .btn-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+        #capture-btn {
+            width: 70px; /* 稍微加大主按鈕 */
+            height: 70px; /* 稍微加大主按鈕 */
+            border-radius: 50%;
+            border: 4px solid white;
+            background-color: rgba(255,255,255,0.3);
+        }
+        #camera-modal .btn-cancel {
+            /* 樣式已由 #camera-controls .btn-icon 統一管理 */
+        }
+
 
         .management-actions {
             display: flex;
@@ -488,7 +747,7 @@
             justify-content: center;
         }
         .management-actions .btn:hover, .management-actions label.btn:hover {
-            background-color: #3a5885;
+            background-color: #586f7a;
         }
 
         /* 新增模式下顯示分類選擇 */
@@ -508,6 +767,26 @@
                 padding: 1.5rem;
                 width: calc(100% - 2rem);
                 margin: 1rem;
+            }
+            /* --- 縮小成果區按鈕以適應窄螢幕 --- */
+            .summary-actions {
+                gap: 0.5rem; /* 8px */
+            }
+            .summary-actions .btn-icon {
+                width: 34px;
+                height: 34px;
+            }
+            .summary-actions .btn-icon svg {
+                width: 18px;
+                height: 18px;
+                stroke-width: 1.8; /* 讓縮小的圖示線條更清晰 */
+            }
+            .summary-header {
+                flex-wrap: wrap; /* 在窄螢幕上允許標題和按鈕換行 */
+                gap: 0.75rem;
+            }
+            .home-intro h1 {
+                font-size: 1.5rem; /* 在窄螢幕上縮小首頁標題 */
             }
         }
 
@@ -532,80 +811,164 @@
             border-radius: 8px;
             margin-bottom: 1rem;
         }
+        #photo-viewer-modal-image {
+            width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+
+        /* --- Home Screen & Calendar --- */
+        #home-screen {
+            width: 100%;
+            max-width: 1200px; /* 與次頁寬度一致 */
+            margin: 1rem auto 2rem; /* 減少上方留白 */
+            padding: 1rem;
+            box-sizing: border-box;
+            display: flex;
+            position: relative; /* 設為相對定位，以便定位內部的絕對元素 */
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .home-intro {
+            /* --- 介紹區塊樣式 --- */
+            margin-bottom: 2rem;
+            margin-bottom: 1rem; /* 減少與月曆之間的留白 */
+        }
+        .home-intro h1 {
+            color: var(--header-color);
+            font-size: 2rem;
+            margin-top: 0; /* 移除 h1 預設的上邊距 */
+            margin-bottom: 0.5rem;
+        }
+        .home-intro p {
+            font-size: 0.8rem; /* 調小二級 */
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 650px;
+            margin: 0 auto; /* 移除底部 margin，改由 .home-intro 控制 */
+        }
+        #home-screen #management-btn {
+            position: absolute;
+            top: 1.25rem; /* 調整 top 值以與標題水平對齊 */
+            left: calc(1rem - 6px); /* 再往左移 3px */
+            background-color: transparent;
+            box-shadow: none;
+        }
+        #home-screen #management-btn:hover {
+            background-color: #eef1ee; /* 加上淡淡的 hover 背景色 */
+        }
+        #home-screen #management-btn svg {
+            stroke: var(--header-color);
+            width: 28px;
+            height: 28px;
+            stroke-width: 1.8;
+        }
+        #calendar-container {
+            width: 100%;
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid #e5e5e5;
+            box-sizing: border-box; /* 確保 padding 不會撐開寬度 */
+        }
+        #home-screen #recommendation-section {
+            width: 100%;
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem 1rem; /* 調整左右 padding，使其與次頁一致 */
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid #e5e5e5;
+        }
+        #calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        #calendar-header h2 { color: var(--header-color); font-size: 1.5rem; margin: 0; }
+        #calendar-header .btn { background-color: var(--accent-color); color: var(--text-primary); font-weight: bold; padding: 0.5rem 1rem; }
+        #calendar-weekdays, #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        #calendar-weekdays div { font-weight: 700; color: var(--text-secondary); font-size: 0.85rem; padding-bottom: 0.5rem; }
+        .day-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            border: 2px solid transparent;
+            padding: 2px;
+            box-sizing: border-box;
+        }
+        .day-number {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 0.8em;
+            font-weight: 500;
+            color: #b0b0b0; /* 刷淡日期數字顏色 */
+            line-height: 1;
+        }
+        .day-count {
+            font-size: 1.2em; /* 再縮小字體 */
+            font-weight: 600; /* 降低粗細 */
+            color: rgba(74, 124, 89, 0.85); /* 顏色刷淡 */
+            line-height: 1;
+            transform: translateY(5px); /* 再稍微向下偏移 */
+        }
+        .day-cell:not(.empty-cell):hover { background-color: #eef1ee; }
+        .day-cell.today { border-color: var(--accent-color); }
+        .day-cell.today .day-number { color: var(--header-color); font-weight: 700; }
+        .day-cell.has-data { background-color: #e4ede4; }
+        .day-cell.has-data.today { background-color: #d8e2d8; }
+        .day-cell.empty-cell { cursor: default; }
+        
+        @media (max-width: 420px) { /* 針對特別窄的螢幕縮小字體 */
+            .day-cell {
+                aspect-ratio: 1 / 1.5; /* 明顯增加高度，讓版面更寬敞 */
+            }
+            .day-number {
+                font-size: 0.7em;
+            }
+            .day-count {
+                font-size: 1.0em;
+            }
+        }
+        
+        @media (min-width: 769px) { /* 在寬螢幕上縮小日期格高度 */
+            .day-cell {
+                aspect-ratio: 4 / 3; /* 讓儲存格寬高比為 4:3，使其變扁 */
+            }
+        }
         
     </style>
 </head>
 <body>
-    <main class="main-content">
-        <div class="top-container">
-            <div class="header">
-                <h1>我的多元營養攝取</h1>
-            </div>
-            <div class="date-selector">
-                <input type="date" id="start-date-picker" value="">
-                <span class="date-label">&mdash;</span>
-                <input type="date" id="end-date-picker" value="">
-            </div>
+    <div id="home-screen" style="display: none;">
+        <div class="home-intro">
+            <h1>我的多元營養攝取</h1>
             <button id="management-btn" class="btn btn-icon btn-select" title="管理">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
             </button>
+            <p>輕鬆記錄每日攝取蔬菜品項，幫助攝取多元營養。<br>請點擊下方日期，記錄或查看當日攝取狀況。</p>
         </div>
-        <input type="file" id="import-file-input" accept=".json" style="display: none;">
-
-        <div class="summary-section">
-            <div class="summary-header">
-                <h3>攝取 <span id="summary-count">0</span> 種蔬菜</h3>
-                <div class="summary-actions">
-                    <button id="select-mode-btn" class="btn btn-icon btn-save" title="新增攝取/儲存">
-                        <svg class="icon-select" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                        <svg class="icon-save" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                    </button>
-                    <button id="reset-button" class="btn btn-icon btn-reset" title="刪除本日紀錄">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-                    </button>
-                </div>
+        <div id="calendar-container">
+            <div id="calendar-header">
+                <button id="prev-month-btn" class="btn">&lt;</button>
+                <h2 id="month-year-display"></h2>
+                <button id="next-month-btn" class="btn">&gt;</button>
             </div>
-            <div class="summary-content">
-                <ul id="summary-list"></ul>
-            </div>
-            <div id="vegetable-container"></div>
+            <div id="calendar-weekdays"></div>
+            <div id="calendar-grid"></div>
         </div>
-
-        <div id="charts-grid" class="charts-container">
-            <div id="category-chart-section" class="summary-section">
-                <div class="summary-header">
-                    <h3>種類</h3>
-                </div>
-                <div class="charts-content">
-                    <div class="chart-wrapper"><canvas id="summary-pie-chart-1"></canvas></div>
-                </div>
-            </div>
-            <div id="unique-items-chart-section" class="summary-section">
-                <div class="summary-header">
-                    <h3>大類</h3>
-                </div>
-                <div class="charts-content">
-                    <div class="chart-wrapper"><canvas id="summary-pie-chart-3"></canvas></div>
-                </div>
-            </div>
-            <div id="nutrient-chart-section" class="summary-section">
-                <div class="summary-header">
-                    <h3>營養素</h3>
-                </div>
-                <div class="charts-content">
-                    <div class="chart-wrapper"><canvas id="summary-pie-chart-2"></canvas></div>
-                </div>
-            </div>
-            <div id="daily-chart-container" class="summary-section" style="display: none;">
-                <div class="summary-header">
-                    <h3>攝取分析</h3>
-                </div>
-                <div class="charts-content">
-                    <div class="chart-wrapper"><canvas id="daily-bar-chart"></canvas></div>
-                </div>
-            </div>
-        </div>
-
         <div id="recommendation-section" class="category-section">
             <div class="category-header">
                 <div class="category-header-title">
@@ -620,12 +983,101 @@
                 <!-- Recommended vegetables will be injected here -->
             </div>
         </div>
+    </div>
 
-        <div id="footer-section">
-            <span>版權所有 All Rights Reserved</span>
-            <span id="about-link" class="link-style">關於網站</span>
+    <main class="main-content" style="display: none;">
+        <div class="top-container">
+            <button id="back-to-home-btn" class="btn btn-icon" title="返回首頁">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h7.5" />
+                </svg>
+            </button>
+            <div class="header">
+                <h1>我的紀錄</h1>
+            </div>
+            <div class="date-selector">
+                <input type="date" id="start-date-picker" value="">
+                <span class="date-label">&mdash;</span>
+                <input type="date" id="end-date-picker" value="">
+            </div>
+        </div>
+        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+        <input type="file" id="upload-photo-input" accept="image/*" style="display: none;" multiple>
+
+        <div class="summary-section">
+            <div class="summary-header">
+                <h3>攝取 <span id="summary-count">0</span> 種蔬菜</h3>
+                <div class="summary-actions">
+                    <button id="camera-btn" class="btn btn-icon btn-select" title="拍照辨識">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></svg>
+                    </button>
+                    <button id="select-mode-btn" class="btn btn-icon btn-save" title="新增攝取/儲存">
+                        <svg class="icon-select" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                        <svg class="icon-save" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    </button>
+                    <button id="reset-button" class="btn btn-icon btn-reset" title="刪除本日紀錄">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="summary-content">
+                <ul id="summary-list"></ul>
+                <div id="photo-gallery-section"></div>
+            </div>
+            <div id="vegetable-container"></div>
+        </div>
+
+        <div id="charts-grid" class="charts-container">
+            <div id="unique-items-chart-section" class="summary-section">
+                <div class="summary-header">
+                    <h3>攝取大類</h3>
+                </div>
+                <div class="charts-content">
+                    <div class="chart-wrapper"><canvas id="summary-pie-chart-3"></canvas></div>
+                </div>
+            </div>
+            <div id="treemap-chart-section" class="summary-section">
+                <div class="summary-header">
+                    <h3>攝取品項</h3>
+                </div>
+                <div class="charts-content">
+                    <div style="width: 100%;">
+                        <div class="chart-wrapper"><canvas id="treemap-chart"></canvas></div>
+                        <div id="treemap-pagination" class="pagination-container"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="nutrient-chart-section" class="summary-section">
+                <div class="summary-header">
+                    <h3>主要營養素</h3>
+                </div>
+                <div class="charts-content">
+                    <div class="chart-wrapper"><canvas id="summary-pie-chart-2"></canvas></div>
+                </div>
+            </div>
+            <div id="trace-elements-chart-section" class="summary-section">
+                <div class="summary-header">
+                    <h3>微量元素</h3>
+                </div>
+                <div class="charts-content">
+                    <div class="chart-wrapper"><canvas id="summary-pie-chart-4"></canvas></div>
+                </div>
+            </div>
+            <div id="daily-chart-container" class="summary-section" style="display: none;">
+                <div class="summary-header">
+                    <h3>攝取分析</h3>
+                </div>
+                <div class="charts-content">
+                    <div class="chart-wrapper"><canvas id="daily-bar-chart"></canvas></div>
+                </div>
+            </div>
         </div>
     </main>
+
+    <div id="footer-section">
+        <span>版權所有 All Rights Reserved</span>
+        <span id="about-link" class="link-style">關於網站</span>
+    </div>
 
     <!-- 管理 Modal -->
     <div id="management-modal" class="modal">
@@ -698,11 +1150,46 @@
         </div>
     </div>
 
+    <!-- 相機 Modal -->
+    <div id="camera-modal" class="modal">
+        <div class="modal-content">
+            <video id="camera-view" autoplay playsinline></video>
+            <canvas id="camera-canvas" style="display:none;"></canvas>
+            <div id="camera-controls" style="align-items: center;">
+                <label for="upload-photo-input" class="btn btn-icon" title="從相簿選取" style="display: inline-flex; align-items: center; justify-content: center; position: relative; top: 5px;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
+                    </svg> 
+                </label>
+                <button type="button" id="capture-btn" title="拍照"></button>
+                <button type="button" class="btn btn-icon btn-cancel" data-modal="camera-modal" title="取消">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 照片刪除確認 Modal -->
+    <div id="photo-delete-confirm-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="photo-delete-confirm-title">刪除照片</h3>
+            <p id="photo-delete-confirm-message">您想要如何處理這張照片？</p>
+            <div id="photo-delete-confirm-actions" class="management-actions" style="margin-bottom: 1rem;">
+                <!-- Buttons will be injected here by JS -->
+            </div>
+            <div class="modal-actions" style="justify-content: center;">
+                <button type="button" class="btn btn-cancel" data-modal="photo-delete-confirm-modal">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 照片檢視 Modal -->
+    <div id="photo-viewer-modal" class="modal"><div class="modal-content"><img id="photo-viewer-modal-image" src="" alt="檢視照片"><div class="modal-actions"><button type="button" class="btn btn-cancel" data-modal="photo-viewer-modal">關閉</button></div></div></div>
+
     <!-- 關於我 Modal -->
     <div id="about-modal" class="modal">
         <div class="modal-content">
             <p>網頁設計概念受楊定一博士著作「療癒的飲食與斷食」啟發，為幫助多元攝取營養，設計此網頁記錄每日品項，也有助提醒尚未攝取的品項，達到多元營養的目的。</p>
-            <p class="small-credit">感謝科技進步，讓我能將想法實現為網頁，也謝謝Jeff Lin技術指導，加快了實現的速度。</p>
+            <p class="small-credit">感謝科技進步，讓我能將想法實現為網頁，也謝謝Jeff Lin技術協力，加快了實現的速度。</p>
             <div class="modal-actions">
                 <button type="button" class="btn btn-cancel" data-modal="about-modal">關閉</button>
             </div>
@@ -711,6 +1198,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    let cameraStream = null;
     // Chart.js Plugin to draw text inside the doughnut chart
     const doughnutTextPlugin = {
         id: 'doughnutText',
@@ -762,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     Chart.register(doughnutTextPlugin, barChartTextPlugin);
 
-    const defaultVegetables = {
+        const defaultVegetables = {
         '葉菜': [
             { name: '地瓜葉', image: 'https://i.postimg.cc/Qx48ccLm/2.png', nutrients: '維生素A, 維生素C, 維生素E, 維生素K, 維生素B6' },
             { name: '空心菜', image: 'https://i.postimg.cc/NjRMYN82/image.png', nutrients: '維生素C, 維生素A, 維生素B2, 葉酸, 維生素B3' },
@@ -856,7 +1344,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     };
 
-    const categoryOrder = ['葉菜', '辛香料', '根莖穀豆', '瓜果莖', '菌菇'];
+    const categoryOrder = ['葉菜', '瓜果莖', '根莖穀豆', '菌菇', '辛香料'];
     const dataVersion = '7.15'; // 資料版本控制 (營養素更新)
     const itemsToRemoveInMigration = ['豆類', '綠豆', '紅豆', '花生']; // 在資料合併時要移除的舊品項
 
@@ -875,8 +1363,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let summaryPieChart1 = null; // 第一個圖表的實例
     let summaryPieChart2 = null; // 第二個圖表的實例
     let summaryPieChart3 = null; // 第三個圖表的實例
+    let summaryPieChart4 = null; // 第四個圖表的實例 (微量元素)
     let dailyBarChart = null;   // 長條圖的實例
     let isStorageAvailable = true; // 追蹤 localStorage 是否可用
+    let currentTreemapPage = 0; // Treemap 分頁狀態
+    let calendarDate = new Date(); // 用於月曆的目前日期
 
     const summarySection = document.querySelector('.summary-section');
     const selectModeBtn = document.getElementById('select-mode-btn');
@@ -886,6 +1377,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const nutrientModal = document.getElementById('nutrient-modal');
     const managementModal = document.getElementById('management-modal');
     const aboutModal = document.getElementById('about-modal');
+    const cameraModal = document.getElementById('camera-modal');
+    const photoViewerModal = document.getElementById('photo-viewer-modal');
+    const photoDeleteConfirmModal = document.getElementById('photo-delete-confirm-modal');
     const modalTitle = document.getElementById('modal-title');
     const editForm = document.getElementById('edit-form');
     const editCategoryInput = document.getElementById('edit-category');
@@ -895,6 +1389,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const vegImageLabel = document.getElementById('veg-image-label');
     const startDatePicker = document.getElementById('start-date-picker');
     const endDatePicker = document.getElementById('end-date-picker');
+    const uploadPhotoInput = document.getElementById('upload-photo-input');
 
     // 日期範圍變數
     let startDate, endDate;
@@ -1017,17 +1512,17 @@ document.addEventListener('DOMContentLoaded', function() {
             vegetables = loadedVeggies;
         }
 
-        eatenState = JSON.parse(safeGetItem('eatenVeggiesDaily')) || {};
+        const storedEatenState = JSON.parse(safeGetItem('eatenVeggiesDaily')) || {};
 
         // 如果執行了資料合併，則對攝取紀錄進行遷移
         if (migrationOccurred) {
             let eatenStateModified = false;
 
             // 1. 處理移除
-            Object.keys(eatenState).forEach(date => {
+            Object.keys(storedEatenState).forEach(date => {
                 itemsToRemoveInMigration.forEach(removedName => {
-                    if (eatenState[date]?.[removedName]) {
-                        delete eatenState[date][removedName];
+                    if (storedEatenState[date]?.[removedName]) {
+                        delete storedEatenState[date][removedName];
                         eatenStateModified = true;
                     }
                 });
@@ -1035,26 +1530,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 2. 處理更名 (從 v5.4 升級)
             if (storedVersion === '5.4') {
-                Object.keys(eatenState).forEach(date => {
-                    if (eatenState[date]?.['豌豆']) {
-                        eatenState[date]['荷蘭豆'] = eatenState[date]['豌豆'];
-                        delete eatenState[date]['豌豆'];
+                Object.keys(storedEatenState).forEach(date => {
+                    if (storedEatenState[date]?.['豌豆']) {
+                        storedEatenState[date]['荷蘭豆'] = storedEatenState[date]['豌豆'];
+                        delete storedEatenState[date]['豌豆'];
                         eatenStateModified = true;
                     }
                 });
             }
 
             // 處理更名: 白韭菜 -> 韭黃
-            Object.keys(eatenState).forEach(date => {
-                if (eatenState[date]?.['白韭菜']) {
-                    eatenState[date]['韭黃'] = eatenState[date]['白韭菜'];
-                    delete eatenState[date]['白韭菜'];
+            Object.keys(storedEatenState).forEach(date => {
+                if (storedEatenState[date]?.['白韭菜']) {
+                    storedEatenState[date]['韭黃'] = storedEatenState[date]['白韭菜'];
+                    delete storedEatenState[date]['白韭菜'];
                     eatenStateModified = true;
                 }
             });
             // 如果有變動，儲存清理後的攝取紀錄
-            if (eatenStateModified) safeSetItem('eatenVeggiesDaily', JSON.stringify(eatenState));
+            if (eatenStateModified) safeSetItem('eatenVeggiesDaily', JSON.stringify(storedEatenState));
         }
+
+        // --- 資料結構遷移：將舊格式的 eatenState 轉換為新格式 ---
+        eatenState = {};
+        Object.keys(storedEatenState).forEach(date => {
+            const entry = storedEatenState[date];
+            if (entry && !entry.hasOwnProperty('items') && !entry.hasOwnProperty('photos')) {
+                // 這是舊格式，轉換它
+                eatenState[date] = {
+                    items: entry,
+                    photos: []
+                };
+            } else {
+                // 這是新格式或空物件，直接使用
+                eatenState[date] = entry;
+            }
+        });
 
         categoryCollapseState = JSON.parse(safeGetItem('categoryCollapseState')) || {};
         
@@ -1078,6 +1589,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startDate = startDatePicker.value;
         endDate = endDatePicker.value;
 
+        currentTreemapPage = 0; // 日期變更時，重置分頁
         if (endDate < startDate) {
             endDate = startDate;
             endDatePicker.value = startDate;
@@ -1090,9 +1602,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 根據是否為多日選擇，禁用或啟用相關按鈕
         selectModeBtn.disabled = isMultiDay;
+        document.getElementById('camera-btn').disabled = isMultiDay;
         document.getElementById('reset-button').disabled = isMultiDay;
 
-        const buttonsToToggle = [selectModeBtn, document.getElementById('reset-button')];
+        const buttonsToToggle = [selectModeBtn, document.getElementById('reset-button'), document.getElementById('camera-btn')];
         buttonsToToggle.forEach(btn => {
             if (isMultiDay) {
                 btn.style.opacity = 0.5;
@@ -1147,8 +1660,8 @@ document.addEventListener('DOMContentLoaded', function() {
             categoryNameWrapper.appendChild(categoryTitle);
 
             // 在單日模式下才顯示分類計數
-            const dailyEatenState = startDate === endDate ? (eatenState[startDate] || {}) : {};
-            const eatenInCategory = vegetables[category].filter(v => dailyEatenState[v.name]).length;
+            const dailyEatenItems = startDate === endDate ? (eatenState[startDate]?.items || {}) : {};
+            const eatenInCategory = vegetables[category].filter(v => dailyEatenItems[v.name]).length;
             const categoryCount = document.createElement('span');
             categoryCount.className = 'category-count';
             categoryCount.textContent = eatenInCategory;
@@ -1171,7 +1684,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 item.className = 'veg-item';
                 // 只有在單日檢視時，才標示為已食用
                 const isMultiDay = startDate !== endDate;
-                if (!isMultiDay && eatenState[startDate]?.[veg.name]) {
+                if (!isMultiDay && eatenState[startDate]?.items?.[veg.name]) {
                     item.classList.add('eaten');
                 }
                 item.dataset.name = veg.name;
@@ -1223,9 +1736,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemServingCounts = {}; // 用於圖表1：計算每個品項的攝取次數
 
         datesInRange.forEach(dateStr => {
-            const dailyEatenState = eatenState[dateStr] || {};
-            Object.keys(dailyEatenState).forEach(vegName => {
-                if (dailyEatenState[vegName]) {
+            const dailyEatenItems = eatenState[dateStr]?.items || {};
+            Object.keys(dailyEatenItems).forEach(vegName => {
+                if (dailyEatenItems[vegName]) {
                     aggregatedEatenSet.add(vegName);
                     itemServingCounts[vegName] = (itemServingCounts[vegName] || 0) + 1;
                 }
@@ -1256,8 +1769,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const listEl = document.getElementById('summary-list');
         const uniqueCategoryCounts = {}; // 用於圖表3：計算每個分類下的獨立品項數
         const nutrientCounts = {};
+        const traceElementCounts = {}; // 用於圖表4：微量元素計數
         
         listEl.innerHTML = ''; // 每次渲染前清空列表
+        document.getElementById('photo-gallery-section').innerHTML = ''; // 清空照片區
         if (eatenList.length === 0) {
             // 如果沒有攝取項目，顯示佔位符
             for (let i = 0; i < 2; i++) {
@@ -1266,6 +1781,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 listEl.appendChild(li);
             }
         } else {
+            // 定義哪些是微量元素
+            const traceElements = ['碘', '鎂', '鐵', '鈣', '鉀', '鋅', '錳', '硒', '磷'];
+
             eatenList.forEach(name => {
                 let vegInfo = null;
                 for (const category in vegetables) {
@@ -1278,7 +1796,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             nutrients.forEach(nutrient => {
                                 const trimmedNutrient = nutrient.trim();
                                 if (trimmedNutrient) {
-                                    nutrientCounts[trimmedNutrient] = (nutrientCounts[trimmedNutrient] || 0) + 1;
+                                    if (traceElements.includes(trimmedNutrient)) {
+                                        traceElementCounts[trimmedNutrient] = (traceElementCounts[trimmedNutrient] || 0) + 1;
+                                    } else {
+                                        nutrientCounts[trimmedNutrient] = (nutrientCounts[trimmedNutrient] || 0) + 1;
+                                    }
                                 }
                             });
                         }
@@ -1289,20 +1811,70 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (vegInfo) {
                     const li = document.createElement('li');
                     li.className = 'summary-item';
+                    li.dataset.name = vegInfo.name; // 加上 data-name 以便識別
                     li.innerHTML = `
                         <img src="${vegInfo.image}" alt="${vegInfo.name}" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e0e0e0/757575?text=?';">
                         <span>${vegInfo.name}</span>
+                        <button class="remove-btn" title="取消選取">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     `;
                     listEl.appendChild(li);
                 }
             });
         }
 
-        renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts);
+        // 渲染照片 (單日或多日)
+        const photoGallery = document.getElementById('photo-gallery-section');
+        photoGallery.innerHTML = ''; // 每次渲染前清空
+
+        const allPhotosInRange = [];
+        datesInRange.forEach(dateStr => {
+            const dailyPhotos = eatenState[dateStr]?.photos || [];
+            dailyPhotos.forEach((photo, index) => {
+                allPhotosInRange.push({
+                    ...photo,
+                    date: dateStr,
+                    originalIndex: index // 保留原始索引，用於單日模式下的刪除
+                });
+            });
+        });
+
+        // 依日期排序
+        allPhotosInRange.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        if (allPhotosInRange.length > 0) {
+            allPhotosInRange.forEach(photoData => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'photo-thumbnail-wrapper';
+
+                const img = document.createElement('img');
+                img.src = photoData.url;
+                img.className = 'photo-thumbnail';
+                img.alt = `攝取紀錄照片 (${photoData.date})`;
+                img.title = photoData.date; // 滑鼠懸停時顯示日期
+
+                wrapper.appendChild(img);
+
+                // 僅在單日模式下顯示刪除按鈕
+                if (!isMultiDay) {
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-photo-btn';
+                    removeBtn.title = '刪除照片';
+                    removeBtn.dataset.index = photoData.originalIndex;
+                    removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+                    wrapper.appendChild(removeBtn);
+                }
+                
+                photoGallery.appendChild(wrapper);
+            });
+        }
+        renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts, traceElementCounts);
 
         // 根據日期選擇，決定是否顯示每日長條圖
         const dailyChartContainer = document.getElementById('daily-chart-container');
-        const dailyChartTitle = dailyChartContainer.querySelector('h3');
 
         if (eatenList.length === 0) {
             dailyChartContainer.style.display = 'block';
@@ -1315,8 +1887,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             datesInRange.forEach(dateStr => {
                 dailyCategoryCounts[dateStr] = {};
-                const dailyEaten = eatenState[dateStr] || {};
-                Object.keys(dailyEaten).forEach(vegName => {
+                const dailyEatenItems = eatenState[dateStr]?.items || {}; // 從 items 讀取
+                Object.keys(dailyEatenItems).forEach(vegName => {
                     for (const category in vegetables) {
                         if (vegetables[category].some(v => v.name === vegName)) {
                             dailyCategoryCounts[dateStr][category] = (dailyCategoryCounts[dateStr][category] || 0) + 1;
@@ -1337,7 +1909,7 @@ document.addEventListener('DOMContentLoaded', function() {
             dailyChartContainer.style.display = 'block';
             renderSingleDayCategoryChart(uniqueCategoryCounts);
         }
-        renderRecommendations();
+        renderRecommendations(endDate);
     }
 
     // 輔助函式，根據基底顏色和數量生成不同深淺的顏色陣列
@@ -1378,6 +1950,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const isMobile = window.innerWidth <= 992;
         const computedStyle = getComputedStyle(document.documentElement);
         let chartData;
+        const treemapCanvas = document.getElementById('treemap-chart');
+        const paginationContainer = document.getElementById('treemap-pagination');
+        paginationContainer.innerHTML = ''; // 清空舊的分頁點
 
         if (hasData) {
             chartData = {
@@ -1408,8 +1983,11 @@ document.addEventListener('DOMContentLoaded', function() {
             type: 'doughnut',
             data: chartData,
             options: {
+                layout: {
+                    padding: 15
+                },
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // 確保圖表填滿容器，不維持原始長寬比
                 cutout: '70%', // 圓環厚度
                 plugins: {
                     title: {
@@ -1444,10 +2022,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 渲染兩個圖表
-    function renderCharts(itemCounts, nutrientCounts, categoryCounts) {
+    function renderCharts(itemCounts, nutrientCounts, categoryCounts, traceElementCounts) {
         if (summaryPieChart1) summaryPieChart1.destroy();
         if (summaryPieChart2) summaryPieChart2.destroy();
         if (summaryPieChart3) summaryPieChart3.destroy();
+        if (summaryPieChart4) summaryPieChart4.destroy();
 
         const computedStyle = getComputedStyle(document.documentElement);
         const getCategoryColors = (labels) => labels.map(label => {
@@ -1455,70 +2034,213 @@ document.addEventListener('DOMContentLoaded', function() {
             return varName ? computedStyle.getPropertyValue(varName).trim() : '#cccccc';
         });
 
+        const traceElementColors = [
+            '#8cd1e6', '#f5b7cb', '#b2d8b2', '#fde2a3', '#d7bde2',
+            '#a9dfbf', '#f1c4a8', '#aed6f1', '#f5cba7', '#b3b6b7'
+        ];
         const nutrientColors = [
             '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
             '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
         ];
 
-        // 圖表1: 品項分佈 (攝取次數)
-        const vegNameToCategoryMap = {};
-        Object.keys(vegetables).forEach(category => {
-            vegetables[category].forEach(veg => {
-                vegNameToCategoryMap[veg.name] = category;
-            });
-        });
+        // 圖表1: 攝取品項 (Treemap)
+        const hasItemData = Object.keys(itemCounts).length > 0;
+        const treemapCanvas = document.getElementById('treemap-chart');
+        const ctx1 = treemapCanvas.getContext('2d');
+        const paginationContainer = document.getElementById('treemap-pagination');
+        paginationContainer.innerHTML = ''; // 清空舊的分頁點
 
-        const sortedItems = Object.entries(itemCounts)
-            .map(([name, count]) => ({
-                name,
-                count,
-                category: vegNameToCategoryMap[name] || ''
-            }))
-            .sort((a, b) => {
+        if (hasItemData) {
+            const vegNameToCategoryMap = {};
+            Object.keys(vegetables).forEach(category => {
+                vegetables[category].forEach(veg => {
+                    vegNameToCategoryMap[veg.name] = category;
+                });
+            });
+
+            let treemapData = Object.entries(itemCounts).map(([name, count]) => ({
+                name: name,
+                count: count, // 直接使用此值計算面積和顯示
+                category: vegNameToCategoryMap[name] || '其他'
+            }));
+
+            // 排序資料以優化視覺分組
+            treemapData.sort((a, b) => {
+                // 1. 主要排序：依攝取次數由高到低
+                if (b.count !== a.count) {
+                    return b.count - a.count;
+                }
+                // 2. 次要排序：當次數相同時，依預設的分類順序排列
                 const categoryIndexA = categoryOrder.indexOf(a.category);
                 const categoryIndexB = categoryOrder.indexOf(b.category);
-
-                if (categoryIndexA !== categoryIndexB) {
-                    return categoryIndexA - categoryIndexB; // 依分類排序
-                }
-                return b.count - a.count; // 再依數量排序
+                return categoryIndexA - categoryIndexB;
             });
 
-        const itemLabels = sortedItems.map(item => item.name);
-        const itemData = sortedItems.map(item => item.count);
+            const TREEMAP_PAGE_SIZE = 40;
+            let pages = [];
+            let dataForChart;
 
-        // 為圖表1生成顏色：相同類別的品項顏色相近但不同
-        const itemsByCategory = {};
-        itemLabels.forEach(label => {
-            for (const category in vegetables) {
-                if (vegetables[category].some(v => v.name === label)) {
-                    if (!itemsByCategory[category]) itemsByCategory[category] = [];
-                    itemsByCategory[category].push(label);
-                    break;
+            if (treemapData.length > TREEMAP_PAGE_SIZE) {
+                for (let i = 0; i < treemapData.length; i += TREEMAP_PAGE_SIZE) {
+                    pages.push(treemapData.slice(i, i + TREEMAP_PAGE_SIZE));
+                }
+
+                // 確保頁碼在有效範圍內
+                if (currentTreemapPage >= pages.length) {
+                    currentTreemapPage = pages.length - 1;
+                }
+                dataForChart = pages[currentTreemapPage];
+
+                // 渲染分頁點
+                pages.forEach((_, index) => {
+                    const dot = document.createElement('span');
+                    dot.className = 'pagination-dot';
+                    if (index === currentTreemapPage) {
+                        dot.classList.add('active');
+                    }
+                    dot.dataset.page = index;
+                    dot.addEventListener('click', () => {
+                        currentTreemapPage = index;
+                        // 重新渲染所有圖表以更新分頁
+                        renderSummary(); 
+                    });
+                    paginationContainer.appendChild(dot);
+                });
+            } else {
+                dataForChart = treemapData;
+            }
+
+            // 建立顏色對應表，讓同類別有不同深淺
+            // 注意：這裡要用 dataForChart 來建立顏色，確保只為當前頁的項目上色
+            // 建立顏色對應表，讓同類別有不同深淺
+            const itemsByCategory = {};
+            dataForChart.forEach(item => {
+                const category = item.category;
+                if (!itemsByCategory[category]) {
+                    itemsByCategory[category] = [];
+                }
+                itemsByCategory[category].push(item);
+            });
+
+            const itemColorMap = {};
+            Object.keys(itemsByCategory).forEach(category => {
+                const items = itemsByCategory[category];
+                // 依攝取次數排序，讓顏色漸層有意義
+                items.sort((a, b) => b.count - a.count);
+                
+                const baseColorVar = categoryColorVars[category];
+                const baseColor = baseColorVar ? computedStyle.getPropertyValue(baseColorVar).trim() : '#cccccc';
+                
+                const shades = generateColorShades(baseColor, items.length);
+                items.forEach((item, index) => itemColorMap[item.name] = shades[index]);
+            });
+
+            summaryPieChart1 = new Chart(ctx1, {
+                type: 'treemap',
+                data: {
+                    datasets: [{
+                        tree: dataForChart,
+                        key: 'count', // 直接使用攝取次數決定面積
+                        borderWidth: 0, // 移除框線
+                        spacing: 0,     // 移除間距
+                        labels: {
+                            display: true,
+                            color: 'white',
+                            font: { size: 12, weight: '500', lineHeight: 1.4 },
+                            formatter: (ctx) => {
+                                const dataItem = ctx.raw._data;
+                                // 顯示原始的攝取次數，而不是 areaValue
+                                return [dataItem.name, dataItem.count];
+                            }
+                        },
+                        backgroundColor: (ctx) => {
+                            if (ctx.type !== 'data') return 'transparent';
+                            const itemName = ctx.raw._data.name;
+                            return itemColorMap[itemName] || '#cccccc';
+                        }
+                    }]
+                },
+                options: {
+                    layout: {
+                        padding: 15
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                // 在提示框中也顯示原始的攝取次數
+                                label: (ctx) => ` ${ctx.raw._data.name}: ${ctx.raw._data.count}`
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            paginationContainer.innerHTML = ''; // 沒有資料時也清空分頁點
+            const placeholderColor = computedStyle.getPropertyValue('--placeholder-bg').trim() || '#eaeaea';
+
+            summaryPieChart1 = new Chart(ctx1, {
+                type: 'treemap',
+                data: {
+                    datasets: [{
+                        tree: [{ value: 1 }], // Simple data for one block
+                        key: 'value',
+                        backgroundColor: placeholderColor,
+                        labels: {
+                            display: true,
+                            align: 'center',
+                            position: 'center',
+                            color: 'grey',
+                            font: { size: 16, weight: '500' },
+                            formatter: () => '無攝取品項資料'
+                        }
+                    }]
+                },
+                options: {
+                    layout: {
+                        padding: 15
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    animation: false
+                }
+            });
+        }
+
+        // --- 為 Treemap 圖表加上滑動手勢 ---
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const swipeThreshold = 50; // 最小滑動距離
+
+        treemapCanvas.removeEventListener('touchstart', handleTouchStart);
+        treemapCanvas.removeEventListener('touchend', handleTouchEnd);
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }
+
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            const swipeDistance = touchEndX - touchStartX;
+
+            if (Math.abs(swipeDistance) > swipeThreshold) {
+                if (swipeDistance < 0 && currentTreemapPage < pages.length - 1) {
+                    currentTreemapPage++; // 向左滑，下一頁
+                    renderSummary();
+                } else if (swipeDistance > 0 && currentTreemapPage > 0) {
+                    currentTreemapPage--; // 向右滑，上一頁
+                    renderSummary();
                 }
             }
-        });
-        const itemColorMap = {};
-        Object.keys(itemsByCategory).forEach(category => {
-            const baseColorVar = categoryColorVars[category];
-            const baseColor = baseColorVar ? computedStyle.getPropertyValue(baseColorVar).trim() : '#cccccc';
-            const items = itemsByCategory[category];
-            const shades = generateColorShades(baseColor, items.length);
-            items.forEach((item, index) => itemColorMap[item] = shades[index]);
-        });
-        const itemColors = itemLabels.map(label => itemColorMap[label] || '#cccccc');
-
-        const totalUniqueItems = itemLabels.length;
-        const itemCenterText = { main: totalUniqueItems, sub: '' };
-        const itemConfig = createChartConfig(
-            '各品項攝取分佈',
-            itemLabels, 
-            itemData,
-            itemColors,
-            itemCenterText
-        );
-        const ctx1 = document.getElementById('summary-pie-chart-1').getContext('2d');
-        summaryPieChart1 = new Chart(ctx1, itemConfig);
+        }
+        treemapCanvas.addEventListener('touchstart', handleTouchStart);
+        treemapCanvas.addEventListener('touchend', handleTouchEnd);
 
         // 圖表2: 營養素分佈
         const sortedNutrients = Object.entries(nutrientCounts)
@@ -1529,7 +2251,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const nutrientCenterText = { main: nutrientLabels.length, sub: '' };
         const nutrientConfig = createChartConfig(
-            '主要營養素分佈',
+            '主要營養素',
             nutrientLabels,
             nutrientData,
             nutrientColors,
@@ -1552,7 +2274,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const totalUniqueCategories = categoryLabels.length;
         const categoryCenterText = { main: totalUniqueCategories, sub: '' };
         const categoryConfig = createChartConfig(
-            '各類別攝取種類',
+            '攝取大類',
             categoryLabels, 
             categoryData, 
             getCategoryColors(categoryLabels),
@@ -1560,6 +2282,24 @@ document.addEventListener('DOMContentLoaded', function() {
         );
         const ctx3 = document.getElementById('summary-pie-chart-3').getContext('2d');
         summaryPieChart3 = new Chart(ctx3, categoryConfig);
+
+        // 圖表4: 微量元素分佈
+        const sortedTraceElements = Object.entries(traceElementCounts)
+            .sort(([, a], [, b]) => b - a);
+
+        const traceLabels = sortedTraceElements.map(([label]) => label);
+        const traceData = sortedTraceElements.map(([, data]) => data);
+
+        const traceCenterText = { main: traceLabels.length, sub: '' };
+        const traceConfig = createChartConfig(
+            '微量元素',
+            traceLabels,
+            traceData,
+            traceElementColors,
+            traceCenterText
+        );
+        const ctx4 = document.getElementById('summary-pie-chart-4').getContext('2d');
+        summaryPieChart4 = new Chart(ctx4, traceConfig);
     }
 
     function renderMultiDayTrendChart(dailyCategoryCounts, allCategories) {
@@ -1594,6 +2334,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 5, right: 15, bottom: 5, left: 10 }
+                },
                 scales: {
                     x: {
                         stacked: true,
@@ -1689,6 +2432,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 5, right: 15, bottom: 5, left: 10 }
+                },
                 scales: {
                     x: {
                         beginAtZero: true,
@@ -1753,9 +2499,9 @@ document.addEventListener('DOMContentLoaded', function() {
         dailyBarChart = new Chart(ctx, config);
     }
 
-    function renderRecommendations() {
+    function renderRecommendations(referenceDateStr) {
         // 1. Get dates for the last 30 days based on the selected end date
-        const referenceDate = new Date(endDatePicker.value + 'T00:00:00Z');
+        const referenceDate = new Date(referenceDateStr + 'T00:00:00Z');
         const last30Days = [];
         for (let i = 0; i < 30; i++) {
             const d = new Date(referenceDate);
@@ -1766,9 +2512,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // 2. Collect all vegetables eaten in the last 30 days
         const eatenInLast30Days = new Set();
         last30Days.forEach(dateStr => {
-            const dailyEaten = eatenState[dateStr] || {};
-            Object.keys(dailyEaten).forEach(vegName => {
-                if (dailyEaten[vegName]) {
+            const dailyEatenItems = eatenState[dateStr]?.items || {};
+            Object.keys(dailyEatenItems).forEach(vegName => { // 從 items 讀取
+                if (dailyEatenItems[vegName]) {
                     eatenInLast30Days.add(vegName);
                 }
             });
@@ -1945,10 +2691,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 如果名稱被修改，同步更新所有日期的攝取紀錄
             if (newName !== originalName) {
-                Object.keys(eatenState).forEach(date => {
-                    if (eatenState[date]?.[originalName]) {
-                        delete eatenState[date][originalName];
-                        eatenState[date][newName] = true;
+                Object.keys(eatenState).forEach(dateStr => {
+                    const dailyItems = eatenState[dateStr]?.items;
+                    if (dailyItems && dailyItems[originalName]) {
+                        delete dailyItems[originalName];
+                        dailyItems[newName] = true;
                     }
                 });
             }
@@ -1985,22 +2732,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // --- 資料匯出/匯入功能 ---
     function downloadDataAsJson() {
-        // 為了確保資料完整性，手動建立一個新的物件來進行序列化
+        // 為了確保資料完整性，特別是包含 Base64 照片的 photos 陣列，
+        // 我們手動建立一個新的物件來進行序列化，而不是直接 stringify 原始的 eatenState。
         const cleanEatenState = {};
         Object.keys(eatenState).forEach(date => {
             const dailyEntry = eatenState[date];
             // 增加對 dailyEntry 是否存在的檢查，確保即使某天紀錄為 null 也不會出錯
             if (dailyEntry) {
                 cleanEatenState[date] = {
-                    items: dailyEntry.items || dailyEntry, // 兼容舊格式
+                    items: dailyEntry.items || {},
                     photos: dailyEntry.photos || []
                 };
             }
         });
 
         const dataToSave = {
-            version: dataVersion,
+            version: dataVersion, // 在備份中加入版本號
             vegetables: vegetables,
+            // 使用手動清理過的 eatenState 進行備份
             eatenState: cleanEatenState,
             categoryCollapseState: categoryCollapseState,
             recommendationCollapseState: recommendationCollapseState
@@ -2029,27 +2778,47 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                // 簡單驗證檔案結構
-                if (data && data.vegetables && data.eatenState && data.categoryCollapseState) {
+                // 驗證檔案結構，確保是有效的備份檔
+                if (data && data.vegetables && data.eatenState) { // 只需驗證核心資料是否存在
                     showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", () => {
                         vegetables = data.vegetables;
-                        eatenState = data.eatenState;
-                        categoryCollapseState = data.categoryCollapseState;
                         
+                        // --- 資料結構遷移：確保上傳的 eatenState 轉換為新格式 ---
+                        const importedEatenState = data.eatenState;
+                        eatenState = {}; // 清空目前的狀態
+                        Object.keys(importedEatenState).forEach(date => {
+                            const entry = importedEatenState[date];
+                            // 如果是舊格式 (沒有 items 和 photos 屬性)，則進行轉換
+                            if (entry && !entry.hasOwnProperty('items') && !entry.hasOwnProperty('photos')) {
+                                eatenState[date] = { items: entry, photos: [] };
+                            } else { // 如果是新格式或空物件，直接使用
+                                eatenState[date] = {
+                                    items: entry.items || {},
+                                    photos: entry.photos || [] // 確保 photos 欄位總是存在
+                                };
+                            }
+                        });
+
+                        // 安全地載入摺疊狀態，若備份檔中不存在則使用預設值
+                        categoryCollapseState = data.categoryCollapseState || {};
+                        recommendationCollapseState = data.recommendationCollapseState !== undefined ? data.recommendationCollapseState : null;
+                        
+                        // 關鍵修正：將備份檔中的版本號也一併寫入 localStorage
+                        if (data.version) {
+                            safeSetItem('dataVersion', data.version);
+                        }
+
                         saveData(); // 將新資料存入 localStorage
                         updateView(); // 重新渲染畫面
                         alert('資料已成功載入！');
                         closeModal(managementModal);
                     });
                 } else {
-                    alert('檔案格式不符，載入失敗。');
+                    alert('檔案格式不符或已損毀，載入失敗。');
                 }
             } catch (error) {
-                console.error("解析JSON檔案時出錯:", error);
+                console.error("解析 JSON 檔案時出錯:", error);
                 alert('讀取檔案時發生錯誤，請確認檔案為有效的 JSON 格式。');
-            } finally {
-                // 重置檔案輸入，以便可以再次選擇同一個檔案
-                event.target.value = '';
             }
         };
         reader.readAsText(file);
@@ -2088,7 +2857,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.target.closest('.delete-btn')) {
                 showConfirmation(`確定要刪除「${name}」嗎？`, () => {
                     vegetables[category] = vegetables[category].filter(v => v.name !== name);
-                    Object.keys(eatenState).forEach(date => { delete eatenState[date][name]; });
+                    // 從所有日期的攝取紀錄中移除此品項
+                    Object.keys(eatenState).forEach(date => {
+                        if (eatenState[date]?.items) {
+                            delete eatenState[date].items[name];
+                        }
+                    });
                     saveData();
                     updateView();
                 });
@@ -2123,10 +2897,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Toggle selection state for all devices
             // 僅在單日模式下啟用
             if (isMultiDay) return;
+            
+            // 確保當天的紀錄物件存在
+            if (!eatenState[startDate]) eatenState[startDate] = { items: {}, photos: [] };
 
-            if (!eatenState[startDate]) eatenState[startDate] = {};
-            const wasEaten = !!eatenState[startDate][name];
-            eatenState[startDate][name] = !wasEaten;
+            const wasEaten = !!eatenState[startDate].items[name];
+            eatenState[startDate].items[name] = !wasEaten;
             saveData();
 
             // Efficiently update UI without full re-render
@@ -2151,8 +2927,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        if (!eatenState[startDate]) eatenState[startDate] = {};
-        eatenState[startDate][name] = true; // Directly add to eaten list
+        // 確保當天的紀錄物件存在
+        if (!eatenState[startDate]) eatenState[startDate] = { items: {}, photos: [] };
+        eatenState[startDate].items[name] = true; // Directly add to eaten list
         saveData();
         updateView();
     });
@@ -2167,7 +2944,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('reset-button').onclick = () => {
         showConfirmation(`確定要重置 ${startDate} 的紀錄嗎？`, () => {
-            eatenState[startDate] = {};
+            eatenState[startDate] = { items: {}, photos: [] };
             saveData();
             updateView();
         });
@@ -2219,8 +2996,235 @@ document.addEventListener('DOMContentLoaded', function() {
 
     editForm.addEventListener('submit', handleFormSubmit);
 
+    // --- 照片上傳功能 ---
+    uploadPhotoInput.addEventListener('change', async (event) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        if (files.length > 5) {
+            alert('一次最多只能上傳 5 張照片。');
+            event.target.value = ''; // 重置 input
+            return;
+        }
+
+        stopCamera(); // 選擇照片後，關閉相機
+
+        const fileReadPromises = Array.from(files).map(file => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = err => reject(err);
+                reader.readAsDataURL(file);
+            });
+        });
+
+        try {
+            const imageDataUrls = await Promise.all(fileReadPromises);
+            
+            if (!eatenState[startDate]) eatenState[startDate] = { items: {}, photos: [] };
+
+            const allRecognizedItems = new Set();
+
+            imageDataUrls.forEach(url => {
+                const recognizedVeggies = simulateRecognition(); // 模擬辨識
+                const recognizedVegNames = recognizedVeggies.map(v => v.name);
+                recognizedVegNames.forEach(name => allRecognizedItems.add(name));
+
+                eatenState[startDate].photos.push({ url: url, recognizedItems: recognizedVegNames });
+            });
+
+            allRecognizedItems.forEach(name => eatenState[startDate].items[name] = true);
+            saveData();
+            updateView();
+            alert(`新增完成！已從 ${imageDataUrls.length} 張照片中自動加入：${Array.from(allRecognizedItems).join('、')}`);
+        } catch (error) {
+            console.error("讀取照片檔案時出錯:", error);
+            alert("讀取照片時發生錯誤。");
+        }
+
+        // 重置 input，以便可以再次選擇同一個檔案
+        event.target.value = '';
+    });
+
+    // --- 成果區項目取消選取功能 ---
+    document.getElementById('summary-list').addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-btn');
+        if (!removeBtn) return;
+
+        const summaryItem = removeBtn.closest('.summary-item');
+        if (!summaryItem) return;
+
+        const name = summaryItem.dataset.name;
+        if (!name) return;
+
+        // 更新資料狀態
+        if (eatenState[startDate]?.items?.[name]) {
+            eatenState[startDate].items[name] = false;
+            saveData();
+            // 直接重新渲染畫面，確保所有相關區塊 (計數、圖表、蔬菜格) 都同步更新
+            updateView();
+        }
+    });
+
+    // --- 照片檢視與刪除功能 ---
+    document.getElementById('photo-gallery-section').addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-photo-btn');
+        const thumbnail = e.target.closest('.photo-thumbnail');
+
+        if (removeBtn) {
+            e.stopPropagation(); // 防止觸發開啟檢視器
+            const photoIndex = parseInt(removeBtn.dataset.index, 10);
+            if (isNaN(photoIndex)) return;
+
+            const photoToDelete = eatenState[startDate]?.photos?.[photoIndex];
+            if (!photoToDelete) return;
+
+            const recognizedItems = photoToDelete.recognizedItems || [];
+
+            if (recognizedItems.length > 0) {
+                // 有關聯蔬菜，顯示進階選項
+                showPhotoDeleteConfirmation(photoIndex, recognizedItems);
+            } else {
+                // 沒有關聯蔬菜 (舊資料)，顯示基本確認
+                showConfirmation('確定要刪除這張照片嗎？', () => {
+                    eatenState[startDate].photos.splice(photoIndex, 1);
+                    saveData();
+                    updateView();
+                });
+            }
+
+        } else if (thumbnail) {
+            // 點擊了照片縮圖 (開啟檢視器)
+            document.getElementById('photo-viewer-modal-image').src = thumbnail.src;
+            photoViewerModal.style.display = 'flex';
+        }
+    });
+
+    function showPhotoDeleteConfirmation(photoIndex, recognizedItems) {
+        const modal = photoDeleteConfirmModal;
+        const actionsContainer = document.getElementById('photo-delete-confirm-actions');
+        const messageEl = document.getElementById('photo-delete-confirm-message');
+        actionsContainer.innerHTML = ''; // 清空舊按鈕
+
+        messageEl.textContent = `這張照片辨識出了「${recognizedItems.join('、')}」。您想要如何處理？`;
+
+        // 按鈕1: 只刪除照片
+        const deletePhotoOnlyBtn = document.createElement('button');
+        deletePhotoOnlyBtn.textContent = '只刪除照片';
+        deletePhotoOnlyBtn.className = 'btn btn-select';
+        deletePhotoOnlyBtn.onclick = () => {
+            eatenState[startDate].photos.splice(photoIndex, 1);
+            saveData();
+            updateView();
+            closeModal(modal);
+        };
+        actionsContainer.appendChild(deletePhotoOnlyBtn);
+
+        // 按鈕2: 刪除照片和對應蔬菜
+        const deleteBothBtn = document.createElement('button');
+        deleteBothBtn.textContent = '刪除照片和對應蔬菜';
+        deleteBothBtn.className = 'btn btn-reset'; // 紅色，表示更強的刪除操作
+        deleteBothBtn.onclick = () => {
+            // 刪除對應的蔬菜
+            recognizedItems.forEach(vegName => {
+                if (eatenState[startDate]?.items?.[vegName]) {
+                    delete eatenState[startDate].items[vegName];
+                }
+            });
+            // 刪除照片
+            eatenState[startDate].photos.splice(photoIndex, 1);
+            saveData();
+            updateView();
+            closeModal(modal);
+        };
+        actionsContainer.appendChild(deleteBothBtn);
+
+        modal.style.display = 'flex';
+    }
+
+    // --- 相機功能 ---
+    document.getElementById('camera-btn').addEventListener('click', () => {
+        // 點擊相機按鈕時，直接開啟相機
+        openCamera();
+    });
+
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        closeModal(cameraModal);
+    }
+
+    document.querySelector('#camera-modal .btn-cancel').addEventListener('click', stopCamera);
+
+    async function openCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('您的瀏覽器不支援相機功能。');
+            return;
+        }
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' } // 優先使用後置鏡頭
+            });
+            const videoEl = document.getElementById('camera-view');
+            videoEl.srcObject = cameraStream;
+            cameraModal.style.display = 'flex';
+        } catch (err) {
+            console.error("相機錯誤:", err);
+            alert('無法開啟相機。請確認您已授權網站使用相機，或您的相機未被其他應用程式佔用。');
+        }
+    }
+
+    document.getElementById('capture-btn').addEventListener('click', () => {
+        const video = document.getElementById('camera-view');
+        const canvas = document.getElementById('camera-canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // 將照片以較低品質、較小尺寸儲存，以節省空間
+        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.7); 
+
+        stopCamera();
+        simulateRecognitionAndSave(imageDataUrl);
+    });
+
+    function simulateRecognition() {
+        const allVeggies = categoryOrder.flatMap(cat => vegetables[cat] || []);
+        if (allVeggies.length === 0) return;
+
+        const recognizedVeggies = [];
+        const numToRecognize = Math.min(allVeggies.length, Math.floor(Math.random() * 2) + 2); // 2 or 3
+
+        while (recognizedVeggies.length < numToRecognize) {
+            const randomIndex = Math.floor(Math.random() * allVeggies.length);
+            const randomVeg = allVeggies[randomIndex];
+            if (!recognizedVeggies.some(v => v.name === randomVeg.name)) {
+                recognizedVeggies.push(randomVeg);
+            }
+        }
+        return recognizedVeggies;
+    }
+
     startDatePicker.addEventListener('change', handleDateChange);
     endDatePicker.addEventListener('change', handleDateChange);
+
+    // --- Home Screen & Calendar Navigation ---
+    document.getElementById('back-to-home-btn').addEventListener('click', () => {
+        showHomeScreen();
+    });
+
+    document.getElementById('prev-month-btn').addEventListener('click', () => {
+        calendarDate.setMonth(calendarDate.getMonth() - 1);
+        renderCalendar(calendarDate.getFullYear(), calendarDate.getMonth());
+    });
+
+    document.getElementById('next-month-btn').addEventListener('click', () => {
+        calendarDate.setMonth(calendarDate.getMonth() + 1);
+        renderCalendar(calendarDate.getFullYear(), calendarDate.getMonth());
+    });
 
     // Add a debounced resize listener to update chart layouts
     let resizeTimer;
@@ -2249,19 +3253,102 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // --- 頁面生命週期處理，強化在行動裝置上的儲存可靠性 ---
-    // 'pagehide' 事件在行動瀏覽器 (特別是 iOS Safari) 上比 'unload' 更可靠。
-    // 當使用者切換分頁、關閉瀏覽器或導航到其他頁面時，此事件會觸發。
-    window.addEventListener('pagehide', function() {
-        // saveData() 是同步且快速的，在此處呼叫是安全的。
-        saveData();
-    });
+    function showHomeScreen() {
+        document.getElementById('home-screen').style.display = 'flex';
+        document.querySelector('.main-content').style.display = 'none';
+        const today = toLocalISOString(new Date());
+        renderRecommendations(today); // 在首頁顯示基於今日的建議
+        renderCalendar(calendarDate.getFullYear(), calendarDate.getMonth());
+    }
+
+    function showMainView(dateStr) {
+        document.getElementById('home-screen').style.display = 'none';
+        document.querySelector('.main-content').style.display = 'block';
+        
+        startDatePicker.value = dateStr;
+        endDatePicker.value = dateStr;
+        handleDateChange();
+    }
+
+    // Helper function to format a date as YYYY-MM-DD in the local timezone
+    function toLocalISOString(date) {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function renderCalendar(year, month) {
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthYearDisplay = document.getElementById('month-year-display');
+        const weekdaysGrid = document.getElementById('calendar-weekdays');
+        calendarGrid.innerHTML = '';
+        weekdaysGrid.innerHTML = '';
+
+        monthYearDisplay.textContent = `${year}年 ${month + 1}月`;
+
+        const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+        weekdays.forEach(day => {
+            const dayEl = document.createElement('div');
+            dayEl.textContent = day;
+            weekdaysGrid.appendChild(dayEl);
+        });
+
+        const firstDayOfMonth = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+        const todayString = toLocalISOString(today);
+
+        // Add empty cells for days before the 1st
+        for (let i = 0; i < firstDayOfMonth; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'day-cell empty-cell';
+            calendarGrid.appendChild(emptyCell);
+        }
+
+        // Add day cells
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'day-cell';
+
+            const dayNumberEl = document.createElement('span');
+            dayNumberEl.className = 'day-number';
+            dayNumberEl.textContent = day;
+            dayCell.appendChild(dayNumberEl);
+            
+            const date = new Date(year, month, day);
+            const dateString = toLocalISOString(date);
+            dayCell.dataset.date = dateString;
+            dayCell.innerHTML = `<span class="day-number">${day}</span>`; // 預設只顯示日期
+
+            dayCell.addEventListener('click', () => {
+                showMainView(dateString);
+            });
+
+            calendarGrid.appendChild(dayCell);
+        }
+
+        // 第二次遍歷，填入計數（這樣可以避免在第一個迴圈中複雜的 DOM 操作）
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateString = toLocalISOString(new Date(year, month, day));
+            const dayCell = calendarGrid.querySelector(`.day-cell[data-date="${dateString}"]`);
+            if (!dayCell) continue;
+
+            if (dateString === todayString) dayCell.classList.add('today');
+
+            const dailyData = eatenState[dateString];
+            // 修正計數邏輯：只計算值為 true 的項目
+            const items = dailyData?.items || {};
+            const count = Object.values(items).filter(isEaten => isEaten === true).length;
+            if (count > 0) {
+                dayCell.classList.add('has-data');
+                dayCell.innerHTML += `<span class="day-count">${count}</span>`;
+            }
+        }
+    }
 
     function initializeApp() {
-        const today = new Date().toISOString().split('T')[0];
-        startDatePicker.value = today;
-        endDatePicker.value = today;
-        handleDateChange();
+        showHomeScreen();
     }
 
     // Initial Load
