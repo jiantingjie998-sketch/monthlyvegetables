@@ -2796,6 +2796,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         categoryCollapseState = data.categoryCollapseState || {};
                         recommendationCollapseState = data.recommendationCollapseState !== undefined ? data.recommendationCollapseState : null;
                         
+                        // 關鍵修正：將備份檔中的版本號也一併寫入 localStorage
+                        if (data.version) {
+                            safeSetItem('dataVersion', data.version);
+                        }
+
                         saveData(); // 將新資料存入 localStorage
                         updateView(); // 重新渲染畫面
                         alert('資料已成功載入！');
