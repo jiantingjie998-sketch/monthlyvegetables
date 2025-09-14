@@ -2819,6 +2819,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 console.error("解析 JSON 檔案時出錯:", error);
                 alert('讀取檔案時發生錯誤，請確認檔案為有效的 JSON 格式。');
+            } finally {
+                // 重置檔案輸入，以便可以再次選擇同一個檔案
+                event.target.value = '';
             }
         };
         reader.readAsText(file);
@@ -3185,10 +3188,21 @@ document.addEventListener('DOMContentLoaded', function() {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         // 將照片以較低品質、較小尺寸儲存，以節省空間
-        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.7); 
+        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.7); // 壓縮為 70% 品質的 JPEG
 
         stopCamera();
-        simulateRecognitionAndSave(imageDataUrl);
+        // 拍照後，直接將照片加入當日紀錄，並模擬辨識
+        const recognizedVeggies = simulateRecognition();
+        const recognizedVegNames = recognizedVeggies.map(v => v.name);
+        
+        if (!eatenState[startDate]) eatenState[startDate] = { items: {}, photos: [] };
+        
+        eatenState[startDate].photos.push({ url: imageDataUrl, recognizedItems: recognizedVegNames });
+        recognizedVegNames.forEach(name => eatenState[startDate].items[name] = true);
+        
+        saveData();
+        updateView();
+        alert(`拍照完成！已自動新增：${recognizedVegNames.join('、')}`);
     });
 
     function simulateRecognition() {
