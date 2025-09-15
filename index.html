@@ -951,7 +951,7 @@
             <button id="management-btn" class="btn btn-icon btn-select" title="管理">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
             </button>
-            <p>輕鬆記錄每日攝取蔬菜品項，幫助攝取多元營養。<br>請點擊下方日期，記錄或查看當日攝取狀況。</p>
+            <p>輕鬆記錄每日攝取蔬菜品項、幫助攝取多元營養<br>請點擊下方日期記錄或查看攝取狀況</p>
         </div>
         <div id="calendar-container">
             <div id="calendar-header">
@@ -1076,7 +1076,7 @@
     <div id="management-modal" class="modal">
         <div class="modal-content">
             <h3>管理選項</h3>
-            <p class="modal-description">您的資料儲存在目前使用的瀏覽器中。若要在不同瀏覽器或裝置間同步，請先「下載備份」，再到另一台裝置「上傳備份」。<br><br><b>提示：</b>若備份檔包含大量照片，在手機上傳時可能因記憶體限制而失敗。建議定期清理不需要的照片紀錄。</p>
+            <p class="modal-description">您的資料儲存在目前使用的瀏覽器中。若要在不同瀏覽器或裝置間同步，請先「下載備份」，再到另一台裝置「上傳備份」。<br><br><b>提示：</b>若備份檔包含大量照片，上傳時可能因記憶體限制而失敗。建議定期清理不需要的照片紀錄。</p>
             <div class="management-actions">
                 <button id="manage-add-veg-btn" class="btn">新增蔬菜</button>
                 <label for="import-file-input" id="manage-import-btn" class="btn">上傳備份</label>
@@ -1394,7 +1394,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             console.error(`Error saving to localStorage: ${e}`);
             if (isStorageAvailable) { // Show the warning only once
-                alert('警告：由於您目前使用的環境（例如 Google Sites 的 iframe 沙箱）限制，無法自動儲存您的紀錄。您仍然可以手動使用「下載/上傳備份」來保存與還原進度。');
+                alert('由於您目前使用的環境限制，可能無法自動儲存您的紀錄');
             }
             isStorageAvailable = false;
         }
@@ -2758,7 +2758,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const link = document.createElement('a');
         link.href = url;
         const localToday = toLocalISOString(new Date()); // 修正：使用本地日期而非 UTC 日期
-        link.download = `vegetable-data-backup-${localToday}.json`;
+        link.download = `veg-backup-${localToday}.json`;
         
         document.body.appendChild(link);
         link.click();
