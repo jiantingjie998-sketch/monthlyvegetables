@@ -172,9 +172,10 @@
         h2 { font-size: 1.5rem; margin: 0; }
         .category-count { font-size: 1.5rem; font-weight: 700; color: var(--text-secondary); }
         .recommendation-subtitle {
-            font-size: 0.85rem;
             font-weight: 400;
             color: #a0a0a0;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
         }
         
         /* --- 折疊圖示 --- */
@@ -208,19 +209,31 @@
         }
 
         /* --- 建議攝取區塊的特殊樣式 --- */
-        /* 寬螢幕：最多顯示3排，超出則滾動 */
+        /* 設定固定高度並捲動 */
         #recommendation-section:not(.collapsed) #recommendation-grid {
             max-height: 420px; /* 約3排蔬菜的高度 */
             overflow-y: auto;
             padding-right: 8px; /* 為滾動條留出空間 */
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-color) transparent;
+        }
+        
+        #recommendation-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+        #recommendation-grid::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #recommendation-grid::-webkit-scrollbar-thumb {
+            background-color: var(--accent-color);
+            border-radius: 6px;
         }
 
-        /* 窄螢幕：全部展開 */
+        /* 窄螢幕：固定高度並保持捲動 */
         @media (max-width: 768px) {
             #recommendation-section:not(.collapsed) #recommendation-grid {
-                max-height: 2000px; /* 恢復足夠大的高度以全部顯示 */
-                overflow-y: hidden; /* 在手機上隱藏滾動條 */
-                padding-right: 0;
+                max-height: 330px; /* 在手機上略微降低高度 */
+                padding-right: 8px;
             }
         }
 
@@ -344,13 +357,19 @@
         /* --- 總覽 & 設定區塊 --- */
         .summary-section {
             width: 100%;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             padding: 1rem;
             background: #fff;
             border-radius: 12px;
             border: 1px solid #e5e5e5;
             box-shadow: 0 2px 4px rgba(0,0,0,0.04);
             box-sizing: border-box; 
+        }
+        .unique-count {
+            font-weight: 400;
+            color: #a0a0a0;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
         }
         .summary-header {
             display: flex;
@@ -533,8 +552,8 @@
         .charts-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin-bottom: 1rem;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
         }
 
         .charts-container .summary-section {
@@ -812,6 +831,10 @@
             margin-bottom: 1rem;
         }
 
+        /* --- 首頁建議攝取區塊樣式 --- */
+        #home-screen #recommendation-section .summary-header h3 {
+            font-size: 1.3rem;
+        }
 
         /* --- Home Screen & Calendar --- */
         #home-screen {
@@ -868,6 +891,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid #e5e5e5;
             box-sizing: border-box; /* 確保 padding 不會撐開寬度 */
+            margin-bottom: 1.5rem; /* 新增和其他區塊一致的下方間距 */
         }
         #home-screen #recommendation-section {
             width: 100%;
@@ -962,15 +986,20 @@
             <div id="calendar-weekdays"></div>
             <div id="calendar-grid"></div>
         </div>
-        <div id="recommendation-section" class="category-section">
-            <div class="category-header">
-                <div class="category-header-title">
-                    <div class="category-name-wrapper">
-                        <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        <h2>建議攝取</h2>
-                    </div>
-                    <span class="recommendation-subtitle">30天內未攝取</span>
+        <div class="summary-section">
+            <div class="summary-header">
+                <h3>攝取品項</h3>
+            </div>
+            <div class="charts-content">
+                <div style="width: 100%;">
+                    <div class="chart-wrapper"><canvas id="home-treemap-chart"></canvas></div>
+                    <div id="home-treemap-pagination" class="pagination-container"></div>
                 </div>
+            </div>
+        </div>
+        <div id="recommendation-section" class="category-section">
+            <div class="summary-header">
+                <h3>建議攝取 <span class="recommendation-subtitle">30天內未攝取</span></h3>
             </div>
             <div id="recommendation-grid" class="vegetable-grid">
                 <!-- Recommended vegetables will be injected here -->
@@ -1337,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     };
 
-    const categoryOrder = ['葉菜', '瓜果莖', '根莖穀豆', '菌菇', '辛香料'];
+    const categoryOrder = ['葉菜', '辛香料', '根莖穀豆', '瓜果莖', '菌菇'];
     const dataVersion = '7.15'; // 資料版本控制 (營養素更新)
     const itemsToRemoveInMigration = ['豆類', '綠豆', '紅豆', '花生']; // 在資料合併時要移除的舊品項
 
@@ -2027,6 +2056,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return varName ? computedStyle.getPropertyValue(varName).trim() : '#cccccc';
         });
 
+        // 更新攝取品項標題，顯示品項總數和總次數
+        const treemapChartSection = document.getElementById('treemap-chart-section');
+        const treemapHeader = treemapChartSection.querySelector('.summary-header h3');
+        const uniqueItemsCount = Object.keys(itemCounts).length;
+        const totalCount = Object.values(itemCounts).reduce((sum, count) => sum + count, 0);
+        treemapHeader.innerHTML = `攝取品項 <span class="unique-count">${uniqueItemsCount}種/${totalCount}次</span>`;
+        
         const traceElementColors = [
             '#8cd1e6', '#f5b7cb', '#b2d8b2', '#fde2a3', '#d7bde2',
             '#a9dfbf', '#f1c4a8', '#aed6f1', '#f5cba7', '#b3b6b7'
@@ -2041,7 +2077,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const treemapCanvas = document.getElementById('treemap-chart');
         const ctx1 = treemapCanvas.getContext('2d');
         const paginationContainer = document.getElementById('treemap-pagination');
-        paginationContainer.innerHTML = ''; // 清空舊的分頁點
+        paginationContainer.innerHTML = '';
 
         if (hasItemData) {
             const vegNameToCategoryMap = {};
@@ -2053,27 +2089,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let treemapData = Object.entries(itemCounts).map(([name, count]) => ({
                 name: name,
-                count: count, // 直接使用此值計算面積和顯示
+                count: count,
                 category: vegNameToCategoryMap[name] || '其他'
             }));
 
-            // 排序資料以優化視覺分組
             treemapData.sort((a, b) => {
-                // 1. 主要排序：依攝取次數由高到低
                 if (b.count !== a.count) {
                     return b.count - a.count;
                 }
-                // 2. 次要排序：當次數相同時，依預設的分類順序排列
                 const categoryIndexA = categoryOrder.indexOf(a.category);
                 const categoryIndexB = categoryOrder.indexOf(b.category);
                 return categoryIndexA - categoryIndexB;
             });
 
-            const TREEMAP_PAGE_SIZE = 40;
+            const isMobile = window.innerWidth <= 992;
+            const TREEMAP_PAGE_SIZE = isMobile ? 40 : 999; // 在手機上限制每頁40個，寬螢幕不限制
             let pages = [];
             let dataForChart;
 
-            if (treemapData.length > TREEMAP_PAGE_SIZE) {
+            if (isMobile && treemapData.length > TREEMAP_PAGE_SIZE) {
                 for (let i = 0; i < treemapData.length; i += TREEMAP_PAGE_SIZE) {
                     pages.push(treemapData.slice(i, i + TREEMAP_PAGE_SIZE));
                 }
@@ -2934,13 +2968,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateView();
     });
 
-    document.querySelector('#recommendation-section .category-header').addEventListener('click', () => {
-        const recommendationSection = document.getElementById('recommendation-section');
-        // Toggle the state. If it was null, renderRecommendations has already set a default.
-        recommendationCollapseState = !recommendationCollapseState;
-        recommendationSection.classList.toggle('collapsed', recommendationCollapseState);
-        saveData();
-    });
+    // 移除建議攝取區塊的折疊功能
 
     document.getElementById('reset-button').onclick = () => {
         showConfirmation(`確定要重置 ${startDate} 的紀錄嗎？`, () => {
@@ -3325,7 +3353,196 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}-${month}-${day}`;
     }
 
+    function generateHomeTreemap(startDateStr, endDateStr) {
+        const canvas = document.getElementById('home-treemap-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const computedStyle = getComputedStyle(document.documentElement);
+        const datesInRange = getDatesInRange(startDateStr, endDateStr);
+
+        // 計算選定日期範圍內的品項數量
+        const itemCounts = {};
+        datesInRange.forEach(dateStr => {
+            const dailyEatenItems = eatenState[dateStr]?.items || {};
+            Object.keys(dailyEatenItems).forEach(vegName => {
+                if (dailyEatenItems[vegName]) {
+                    itemCounts[vegName] = (itemCounts[vegName] || 0) + 1;
+                }
+            });
+        });
+
+        const hasItemData = Object.keys(itemCounts).length > 0;
+        const paginationContainer = document.getElementById('home-treemap-pagination');
+        paginationContainer.innerHTML = '';
+
+        if (hasItemData) {
+            const vegNameToCategoryMap = {};
+            Object.keys(vegetables).forEach(category => {
+                vegetables[category].forEach(veg => {
+                    vegNameToCategoryMap[veg.name] = category;
+                });
+            });
+
+            let treemapData = Object.entries(itemCounts).map(([name, count]) => ({
+                name: name,
+                count: count,
+                category: vegNameToCategoryMap[name] || '其他'
+            }));
+
+            treemapData.sort((a, b) => {
+                if (b.count !== a.count) {
+                    return b.count - a.count;
+                }
+                const categoryIndexA = categoryOrder.indexOf(a.category);
+                const categoryIndexB = categoryOrder.indexOf(b.category);
+                return categoryIndexA - categoryIndexB;
+            });
+
+            const isMobile = window.innerWidth <= 992;
+            const TREEMAP_PAGE_SIZE = isMobile ? 40 : 999; // 在手機上限制每頁40個，寬螢幕不限制
+            let pages = [];
+            let dataForChart;
+
+            if (isMobile && treemapData.length > TREEMAP_PAGE_SIZE) {
+                for (let i = 0; i < treemapData.length; i += TREEMAP_PAGE_SIZE) {
+                    pages.push(treemapData.slice(i, i + TREEMAP_PAGE_SIZE));
+                }
+
+                if (currentTreemapPage >= pages.length) {
+                    currentTreemapPage = pages.length - 1;
+                }
+                dataForChart = pages[currentTreemapPage];
+
+                pages.forEach((_, index) => {
+                    const dot = document.createElement('span');
+                    dot.className = 'pagination-dot';
+                    if (index === currentTreemapPage) {
+                        dot.classList.add('active');
+                    }
+                    dot.dataset.page = index;
+                    dot.addEventListener('click', () => {
+                        currentTreemapPage = index;
+                        generateHomeTreemap(startDateStr, endDateStr);
+                    });
+                    paginationContainer.appendChild(dot);
+                });
+            } else {
+                dataForChart = treemapData;
+            }
+
+            const itemsByCategory = {};
+            dataForChart.forEach(item => {
+                if (!itemsByCategory[item.category]) {
+                    itemsByCategory[item.category] = [];
+                }
+                itemsByCategory[item.category].push(item);
+            });
+
+            const itemColorMap = {};
+            Object.keys(itemsByCategory).forEach(category => {
+                const items = itemsByCategory[category];
+                items.sort((a, b) => b.count - a.count);
+                
+                const baseColorVar = categoryColorVars[category];
+                const baseColor = baseColorVar ? computedStyle.getPropertyValue(baseColorVar).trim() : '#cccccc';
+                
+                const shades = generateColorShades(baseColor, items.length);
+                items.forEach((item, index) => itemColorMap[item.name] = shades[index]);
+            });
+
+            if (window.homeTreemap) window.homeTreemap.destroy();
+            window.homeTreemap = new Chart(ctx, {
+                type: 'treemap',
+                data: {
+                    datasets: [{
+                        tree: dataForChart,
+                        key: 'count',
+                        borderWidth: 0,
+                        spacing: 0,
+                        labels: {
+                            display: true,
+                            color: 'white',
+                            font: { size: 12, weight: '500', lineHeight: 1.4 },
+                            formatter: (ctx) => {
+                                const dataItem = ctx.raw._data;
+                                return [dataItem.name, dataItem.count];
+                            }
+                        },
+                        backgroundColor: (ctx) => {
+                            if (ctx.type !== 'data') return 'transparent';
+                            const itemName = ctx.raw._data.name;
+                            return itemColorMap[itemName] || '#cccccc';
+                        }
+                    }]
+                },
+                options: {
+                    layout: {
+                        padding: 15
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.raw._data.name}: ${ctx.raw._data.count}`
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 更新首頁的攝取品項標題，顯示品項總數和總次數
+            const uniqueItemsCount = Object.keys(itemCounts).length;
+            const totalCount = Object.values(itemCounts).reduce((sum, count) => sum + count, 0);
+            const homeTreemapSection = document.querySelector('#home-screen .summary-section h3');
+            homeTreemapSection.innerHTML = `攝取品項 <span class="unique-count">${uniqueItemsCount}種/${totalCount}次</span>`;
+        } else {
+            const placeholderColor = computedStyle.getPropertyValue('--placeholder-bg').trim() || '#eaeaea';
+            
+            if (window.homeTreemap) window.homeTreemap.destroy();
+            window.homeTreemap = new Chart(ctx, {
+                type: 'treemap',
+                data: {
+                    datasets: [{
+                        tree: [{ value: 1 }],
+                        key: 'value',
+                        backgroundColor: placeholderColor,
+                        labels: {
+                            display: true,
+                            align: 'center',
+                            position: 'center',
+                            color: 'grey',
+                            font: { size: 16, weight: '500' },
+                            formatter: () => '無攝取品項資料'
+                        }
+                    }]
+                },
+                options: {
+                    layout: {
+                        padding: 15
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    animation: false
+                }
+            });
+        }
+    }
+
     function renderCalendar(year, month) {
+        // 計算月份的開始和結束日期
+        const startOfMonth = toLocalISOString(new Date(year, month, 1));
+        const endOfMonth = toLocalISOString(new Date(year, month + 1, 0));
+        
+        // 生成月曆視圖下方的 treemap 圖表
+        generateHomeTreemap(startOfMonth, endOfMonth);
+
         const calendarGrid = document.getElementById('calendar-grid');
         const monthYearDisplay = document.getElementById('month-year-display');
         const weekdaysGrid = document.getElementById('calendar-weekdays');
@@ -3333,6 +3550,12 @@ document.addEventListener('DOMContentLoaded', function() {
         weekdaysGrid.innerHTML = '';
 
         monthYearDisplay.textContent = `${year}年 ${month + 1}月`;
+        monthYearDisplay.style.fontSize = '1.5rem';
+        monthYearDisplay.style.fontWeight = '700';
+        document.querySelectorAll('.summary-section h3, #recommendation-section h2').forEach(title => {
+            title.style.fontSize = '1.5rem';
+            title.style.fontWeight = '700';
+        });
 
         const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
         weekdays.forEach(day => {
