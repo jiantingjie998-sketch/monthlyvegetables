@@ -3442,7 +3442,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const count = Object.values(items).filter(isEaten => isEaten === true).length;
             if (count > 0) {
                 dayCell.classList.add('has-data');
-                dayCell.innerHTML += `<span class="day-count">${count}</span>`;
+                const countEl = document.createElement('span');
+                countEl.className = 'day-count';
+                countEl.textContent = count;
+                dayCell.appendChild(countEl);
             }
 
             // 如果當天有照片，則新增照片圖示 (修正)
