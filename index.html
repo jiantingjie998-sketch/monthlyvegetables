@@ -60,7 +60,7 @@
             justify-content: space-between;
             align-items: center; /* 確保所有項目在垂直方向上置中對齊 */
             width: 100%;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem; /* 統一主要區塊間距 */
             gap: 0.75rem;
         }
         .header {
@@ -144,7 +144,7 @@
 
         /* --- 分類區塊 --- */
         .category-section {
-            margin-top: 1rem;
+            margin-top: 1.5rem; /* 統一主要區塊間距 */
         }
 
         /* --- 分類標題 (可點擊) --- */
@@ -551,9 +551,9 @@
         /* --- 圖表區塊 --- */
         .charts-container {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
+            grid-template-columns: repeat(2, 1fr); /* 桌面版為兩欄 */
+            gap: 1.5rem; /* 統一圖表間距 */
+            margin-bottom: 1.5rem; /* 統一主要區塊間距 */
         }
 
         .charts-container .summary-section {
@@ -643,7 +643,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 2rem;
+            margin-top: 1.5rem; /* 統一主要區塊間距 */
             padding: 1rem;
             font-size: 0.85rem;
             color: var(--text-secondary);
@@ -852,7 +852,7 @@
         .home-intro {
             /* --- 介紹區塊樣式 --- */
             margin-bottom: 2rem;
-            margin-bottom: 1rem; /* 減少與月曆之間的留白 */
+            margin-bottom: 1.5rem; /* 統一主要區塊間距 */
         }
         .home-intro h1 {
             color: var(--header-color);
@@ -901,6 +901,10 @@
             box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid #e5e5e5;
+        }
+        /* 移除首頁建議攝取區塊的上邊距，避免與上方圖表間距過大 */
+        #home-screen > #recommendation-section {
+            margin-top: 0;
         }
         #calendar-header {
             display: flex;
@@ -1026,7 +1030,7 @@
         <input type="file" id="import-file-input" accept=".json" style="display: none;">
         <input type="file" id="upload-photo-input" accept="image/*" style="display: none;" multiple>
 
-        <div class="summary-section">
+        <div id="daily-summary-section" class="summary-section">
             <div class="summary-header">
                 <h3>攝取 <span id="summary-count">0</span> 種蔬菜</h3>
                 <div class="summary-actions">
@@ -1056,17 +1060,6 @@
                 </div>
                 <div class="charts-content">
                     <div class="chart-wrapper"><canvas id="summary-pie-chart-3"></canvas></div>
-                </div>
-            </div>
-            <div id="treemap-chart-section" class="summary-section">
-                <div class="summary-header">
-                    <h3>攝取品項</h3>
-                </div>
-                <div class="charts-content">
-                    <div style="width: 100%;">
-                        <div class="chart-wrapper"><canvas id="treemap-chart"></canvas></div>
-                        <div id="treemap-pagination" class="pagination-container"></div>
-                    </div>
                 </div>
             </div>
             <div id="nutrient-chart-section" class="summary-section">
@@ -1382,16 +1375,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let eatenState = {};
     let categoryCollapseState = {}; // 追蹤類別的折疊狀態
     let recommendationCollapseState = null;
-    let treemapChart = null; // Treemap 圖表的實例
     let summaryPieChart2 = null; // 第二個圖表的實例
     let summaryPieChart3 = null; // 第三個圖表的實例
     let summaryPieChart4 = null; // 第四個圖表的實例 (微量元素)
     let dailyBarChart = null;   // 長條圖的實例
     let isStorageAvailable = true; // 追蹤 localStorage 是否可用
-    let currentTreemapPage = 0; // Treemap 分頁狀態
     let calendarDate = new Date(); // 用於月曆的目前日期
 
-    const summarySection = document.querySelector('.summary-section');
+    const summarySection = document.getElementById('daily-summary-section');
     const selectModeBtn = document.getElementById('select-mode-btn');
     const vegContainer = document.getElementById('vegetable-container');
     const editModal = document.getElementById('edit-modal');
@@ -1611,7 +1602,6 @@ document.addEventListener('DOMContentLoaded', function() {
         startDate = startDatePicker.value;
         endDate = endDatePicker.value;
 
-        currentTreemapPage = 0; // 日期變更時，重置分頁
         if (endDate < startDate) {
             endDate = startDate;
             endDatePicker.value = startDate;
@@ -1767,7 +1757,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         const eatenList = Array.from(aggregatedEatenSet);
-        const summaryTitleEl = document.querySelector('.summary-header h3');
+        const summaryTitleEl = summarySection.querySelector('.summary-header h3');
         let titleText = '';
 
         const today = new Date().toISOString().split('T')[0];
@@ -1972,9 +1962,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const isMobile = window.innerWidth <= 992;
         const computedStyle = getComputedStyle(document.documentElement);
         let chartData;
-        const treemapCanvas = document.getElementById('treemap-chart');
-        const paginationContainer = document.getElementById('treemap-pagination');
-        paginationContainer.innerHTML = ''; // 清空舊的分頁點
 
         if (hasData) {
             chartData = {
@@ -2045,7 +2032,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 渲染兩個圖表
     function renderCharts(itemCounts, nutrientCounts, categoryCounts, traceElementCounts) {
-        if (treemapChart) treemapChart.destroy();
         if (summaryPieChart2) summaryPieChart2.destroy();
         if (summaryPieChart3) summaryPieChart3.destroy();
         if (summaryPieChart4) summaryPieChart4.destroy();
@@ -2055,13 +2041,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const varName = categoryColorVars[label];
             return varName ? computedStyle.getPropertyValue(varName).trim() : '#cccccc';
         });
-
-        // 更新攝取品項標題，顯示品項總數和總次數
-        const treemapChartSection = document.getElementById('treemap-chart-section');
-        const treemapHeader = treemapChartSection.querySelector('.summary-header h3');
-        const uniqueItemsCount = Object.keys(itemCounts).length;
-        const totalCount = Object.values(itemCounts).reduce((sum, count) => sum + count, 0);
-        treemapHeader.innerHTML = `攝取品項 <span class="unique-count">${uniqueItemsCount}種/${totalCount}次</span>`;
         
         const traceElementColors = [
             '#8cd1e6', '#f5b7cb', '#b2d8b2', '#fde2a3', '#d7bde2',
@@ -2071,206 +2050,6 @@ document.addEventListener('DOMContentLoaded', function() {
             '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
             '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
         ];
-
-        // 圖表1: 攝取品項 (Treemap)
-        const hasItemData = Object.keys(itemCounts).length > 0;
-        const treemapCanvas = document.getElementById('treemap-chart');
-        const ctx1 = treemapCanvas.getContext('2d');
-        const paginationContainer = document.getElementById('treemap-pagination');
-        paginationContainer.innerHTML = '';
-
-        if (hasItemData) {
-            const vegNameToCategoryMap = {};
-            Object.keys(vegetables).forEach(category => {
-                vegetables[category].forEach(veg => {
-                    vegNameToCategoryMap[veg.name] = category;
-                });
-            });
-
-            let treemapData = Object.entries(itemCounts).map(([name, count]) => ({
-                name: name,
-                count: count,
-                category: vegNameToCategoryMap[name] || '其他'
-            }));
-
-            treemapData.sort((a, b) => {
-                if (b.count !== a.count) {
-                    return b.count - a.count;
-                }
-                const categoryIndexA = categoryOrder.indexOf(a.category);
-                const categoryIndexB = categoryOrder.indexOf(b.category);
-                return categoryIndexA - categoryIndexB;
-            });
-
-            const isMobile = window.innerWidth <= 992;
-            const TREEMAP_PAGE_SIZE = isMobile ? 40 : 999; // 在手機上限制每頁40個，寬螢幕不限制
-            let pages = [];
-            let dataForChart;
-
-            if (isMobile && treemapData.length > TREEMAP_PAGE_SIZE) {
-                for (let i = 0; i < treemapData.length; i += TREEMAP_PAGE_SIZE) {
-                    pages.push(treemapData.slice(i, i + TREEMAP_PAGE_SIZE));
-                }
-
-                // 確保頁碼在有效範圍內
-                if (currentTreemapPage >= pages.length) {
-                    currentTreemapPage = pages.length - 1;
-                }
-                dataForChart = pages[currentTreemapPage];
-
-                // 渲染分頁點
-                pages.forEach((_, index) => {
-                    const dot = document.createElement('span');
-                    dot.className = 'pagination-dot';
-                    if (index === currentTreemapPage) {
-                        dot.classList.add('active');
-                    }
-                    dot.dataset.page = index;
-                    dot.addEventListener('click', () => {
-                        currentTreemapPage = index;
-                        // 重新渲染所有圖表以更新分頁
-                        renderSummary(); 
-                    });
-                    paginationContainer.appendChild(dot);
-                });
-            } else {
-                dataForChart = treemapData;
-            }
-
-            // 建立顏色對應表，讓同類別有不同深淺
-            // 注意：這裡要用 dataForChart 來建立顏色，確保只為當前頁的項目上色
-            // 建立顏色對應表，讓同類別有不同深淺
-            const itemsByCategory = {};
-            dataForChart.forEach(item => {
-                const category = item.category;
-                if (!itemsByCategory[category]) {
-                    itemsByCategory[category] = [];
-                }
-                itemsByCategory[category].push(item);
-            });
-
-            const itemColorMap = {};
-            Object.keys(itemsByCategory).forEach(category => {
-                const items = itemsByCategory[category];
-                // 依攝取次數排序，讓顏色漸層有意義
-                items.sort((a, b) => b.count - a.count);
-                
-                const baseColorVar = categoryColorVars[category];
-                const baseColor = baseColorVar ? computedStyle.getPropertyValue(baseColorVar).trim() : '#cccccc';
-                
-                const shades = generateColorShades(baseColor, items.length);
-                items.forEach((item, index) => itemColorMap[item.name] = shades[index]);
-            });
-
-            treemapChart = new Chart(ctx1, {
-                type: 'treemap',
-                data: {
-                    datasets: [{
-                        tree: dataForChart,
-                        key: 'count', // 直接使用攝取次數決定面積
-                        borderWidth: 0, // 移除框線
-                        spacing: 0,     // 移除間距
-                        labels: {
-                            display: true,
-                            color: 'white',
-                            font: { size: 12, weight: '500', lineHeight: 1.4 },
-                            formatter: (ctx) => {
-                                const dataItem = ctx.raw._data;
-                                // 顯示原始的攝取次數，而不是 areaValue
-                                return [dataItem.name, dataItem.count];
-                            }
-                        },
-                        backgroundColor: (ctx) => {
-                            if (ctx.type !== 'data') return 'transparent';
-                            const itemName = ctx.raw._data.name;
-                            return itemColorMap[itemName] || '#cccccc';
-                        }
-                    }]
-                },
-                options: {
-                    layout: {
-                        padding: 15
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                // 在提示框中也顯示原始的攝取次數
-                                label: (ctx) => ` ${ctx.raw._data.name}: ${ctx.raw._data.count}`
-                            }
-                        }
-                    }
-                }
-            });
-        } else {
-            paginationContainer.innerHTML = ''; // 沒有資料時也清空分頁點
-            const placeholderColor = computedStyle.getPropertyValue('--placeholder-bg').trim() || '#eaeaea';
-
-            treemapChart = new Chart(ctx1, {
-                type: 'treemap',
-                data: {
-                    datasets: [{
-                        tree: [{ value: 1 }], // Simple data for one block
-                        key: 'value',
-                        backgroundColor: placeholderColor,
-                        labels: {
-                            display: true,
-                            align: 'center',
-                            position: 'center',
-                            color: 'grey',
-                            font: { size: 16, weight: '500' },
-                            formatter: () => '無攝取品項資料'
-                        }
-                    }]
-                },
-                options: {
-                    layout: {
-                        padding: 15
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false }
-                    },
-                    animation: false
-                }
-            });
-        }
-
-        // --- 為 Treemap 圖表加上滑動手勢 ---
-        let touchStartX = 0;
-        let touchEndX = 0;
-        const swipeThreshold = 50; // 最小滑動距離
-
-        treemapCanvas.removeEventListener('touchstart', handleTouchStart);
-        treemapCanvas.removeEventListener('touchmove', handleTouchMove);
-        treemapCanvas.removeEventListener('touchend', handleTouchEnd);
-
-        function handleTouchStart(e) {
-            touchStartX = e.changedTouches[0].screenX;
-        }
-        function handleTouchMove(e) { e.preventDefault(); }
-
-        function handleTouchEnd(e) {
-            touchEndX = e.changedTouches[0].screenX;
-            const swipeDistance = touchEndX - touchStartX;
-
-            if (Math.abs(swipeDistance) > swipeThreshold) {
-                if (swipeDistance < 0 && currentTreemapPage < pages.length - 1) {
-                    currentTreemapPage++; // 向左滑，下一頁
-                    renderSummary();
-                } else if (swipeDistance > 0 && currentTreemapPage > 0) {
-                    currentTreemapPage--; // 向右滑，上一頁
-                    renderSummary();
-                }
-            }
-        }
-        treemapCanvas.addEventListener('touchstart', handleTouchStart);
-        treemapCanvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-        treemapCanvas.addEventListener('touchend', handleTouchEnd);
 
         // 圖表2: 營養素分佈
         const sortedNutrients = Object.entries(nutrientCounts)
@@ -2574,11 +2353,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 item.dataset.name = veg.name;
                 item.dataset.category = veg.category;
 
-                item.innerHTML = `
+                 item.innerHTML = `
                     <div class="veg-image-container">
                         <img class="veg-image" src="${veg.image}" alt="${veg.name}" onerror="this.onerror=null;this.src='https://placehold.co/300x200/e0e0e0/757575?text=${encodeURIComponent(veg.name)}';">
                     </div>
                     <div class="veg-name">${veg.name}</div>
+                    <div class="veg-actions">
+                        <button class="action-btn info-btn" title="資訊">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                        </button>
+                    </div>
                 `;
                 recommendationGrid.appendChild(item);
             });
@@ -2949,23 +2733,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    document.getElementById('recommendation-grid').addEventListener('click', e => {
+    // 處理建議攝取區塊的點擊事件 (只處理資訊按鈕)
+    document.getElementById('recommendation-grid').addEventListener('click', (e) => {
         const vegItem = e.target.closest('.veg-item');
         if (!vegItem) return;
 
-        const name = vegItem.dataset.name;
-        const isMultiDay = startDate !== endDate;
-
-        if (isMultiDay) {
-            alert('請在單日模式下新增攝取紀錄。');
-            return;
+        // 檢查是否點擊了資訊按鈕
+        if (e.target.closest('.info-btn')) {
+            openNutrientModal(vegItem.dataset.category, vegItem.dataset.name);
         }
-
-        // 確保當天的紀錄物件存在
-        if (!eatenState[startDate]) eatenState[startDate] = { items: {}, photos: [] };
-        eatenState[startDate].items[name] = true; // Directly add to eaten list
-        saveData();
-        updateView();
     });
 
     // 移除建議攝取區塊的折疊功能
@@ -3312,8 +3088,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 全域點擊監聽，用於關閉已開啟的選單
     document.addEventListener('click', (e) => {
-        // If the click is outside any vegetable item, close all action menus.
-        if (!e.target.closest('.veg-item')) {
+        // 修正：只有當點擊的目標及其任何父元素都不是 .veg-item 時，才關閉選單。
+        // 這可以防止點擊 .veg-item 的子元素（如圖片或文字）時，錯誤地關閉選單。
+        const clickedVegItem = e.target.closest('.veg-item');
+        if (!clickedVegItem) {
             document.querySelectorAll('.veg-item.show-actions').forEach(item => {
                 item.classList.remove('show-actions');
                 const timerId = item.dataset.actionTimer;
@@ -3329,6 +3107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function showHomeScreen() {
+        // 顯示首頁 (月曆、建議攝取等)
         document.getElementById('home-screen').style.display = 'flex';
         document.querySelector('.main-content').style.display = 'none';
         const today = toLocalISOString(new Date());
@@ -3337,6 +3116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showMainView(dateStr) {
+        // 顯示次頁 (單日/多日紀錄)
         document.getElementById('home-screen').style.display = 'none';
         document.querySelector('.main-content').style.display = 'block';
         
@@ -3357,6 +3137,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const canvas = document.getElementById('home-treemap-chart');
         if (!canvas) return;
 
+        let currentTreemapPage = 0; // Treemap 分頁狀態
         const ctx = canvas.getContext('2d');
         const computedStyle = getComputedStyle(document.documentElement);
         const datesInRange = getDatesInRange(startDateStr, endDateStr);
