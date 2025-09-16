@@ -1360,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     };
 
-    const categoryOrder = ['葉菜', '辛香料', '根莖穀豆', '瓜果莖', '菌菇'];
+    const categoryOrder = ['葉菜', '瓜果莖', '菌菇', '根莖穀豆', '辛香料'];
     const dataVersion = '7.15'; // 資料版本控制 (營養素更新)
     const itemsToRemoveInMigration = ['豆類', '綠豆', '紅豆', '花生']; // 在資料合併時要移除的舊品項
 
@@ -2589,6 +2589,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const file = event.target.files[0];
         if (!file) return;
 
+        // 修正：選擇檔案後，立即關閉管理視窗，讓後續流程更乾淨
+        closeModal(managementModal);
+
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -2626,8 +2629,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         saveData(); // 將新資料存入 localStorage
                         updateView(); // 重新渲染畫面
+                        closeModal(managementModal); // 關閉管理選項對話框
                         alert('資料已成功載入！');
-                        closeModal(managementModal);
                     });
                 } else {
                     alert('檔案格式不符或已損毀，載入失敗。');
@@ -2793,8 +2796,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('manage-download-btn').addEventListener('click', () => {
         downloadDataAsJson();
-        // 讓使用者看到下載觸發後再關閉
-        setTimeout(() => closeModal(managementModal), 300);
+        closeModal(managementModal); // 點擊後立即關閉
     });
 
     document.getElementById('import-file-input').addEventListener('change', handleFileUpload);
