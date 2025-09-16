@@ -3154,6 +3154,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const hasItemData = Object.keys(itemCounts).length > 0;
         const paginationContainer = document.getElementById('home-treemap-pagination');
         paginationContainer.innerHTML = '';
+        
+        // 將標題元素選擇器移至前方，以便在各種情況下都能更新
+        const homeTreemapTitle = document.querySelector('#home-screen .summary-section h3');
 
         if (hasItemData) {
             const vegNameToCategoryMap = {};
@@ -3273,11 +3276,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // 更新首頁的攝取品項標題，顯示品項總數和總次數
             const uniqueItemsCount = Object.keys(itemCounts).length;
             const totalCount = Object.values(itemCounts).reduce((sum, count) => sum + count, 0);
-            const homeTreemapSection = document.querySelector('#home-screen .summary-section h3');
-            homeTreemapSection.innerHTML = `攝取品項 <span class="unique-count">${uniqueItemsCount}種/${totalCount}次</span>`;
+            homeTreemapTitle.innerHTML = `攝取品項 <span class="unique-count">${uniqueItemsCount}種/${totalCount}次</span>`;
         } else {
             const placeholderColor = computedStyle.getPropertyValue('--placeholder-bg').trim() || '#eaeaea';
             
+            homeTreemapTitle.innerHTML = `攝取品項 <span class="unique-count">0種/0次</span>`;
             if (window.homeTreemap) window.homeTreemap.destroy();
             window.homeTreemap = new Chart(ctx, {
                 type: 'treemap',
