@@ -831,11 +831,6 @@
             margin-bottom: 1rem;
         }
 
-        /* --- 首頁建議攝取區塊樣式 --- */
-        #home-screen #recommendation-section .summary-header h3 {
-            font-size: 1.3rem;
-        }
-
         /* --- Home Screen & Calendar --- */
         #home-screen {
             width: 100%;
@@ -891,13 +886,16 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid #e5e5e5;
             box-sizing: border-box; /* 確保 padding 不會撐開寬度 */
-            margin-bottom: 1.5rem; /* 新增和其他區塊一致的下方間距 */
+        margin-bottom: 1.5rem;
+    }
+    #home-screen .summary-section {
+        padding: 1.5rem; /* 與月曆區塊的 padding 一致 */
         }
         #home-screen #recommendation-section {
             width: 100%;
             background: #fff;
             border-radius: 12px;
-            padding: 1.5rem 1rem; /* 調整左右 padding，使其與次頁一致 */
+        padding: 1.5rem; /* 與月曆區塊的 padding 一致 */
             box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid #e5e5e5;
@@ -979,7 +977,7 @@
             <button id="management-btn" class="btn btn-icon btn-select" title="管理">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
             </button>
-            <p>輕鬆記錄每日攝取蔬菜品項、幫助攝取多元營養<br>請點擊下方日期記錄或查看攝取狀況</p>
+            <p>輕鬆記錄每日飲食、幫助攝取多元營養<br>請點擊下方日期記錄或查看攝取狀況</p>
         </div>
         <div id="calendar-container">
             <div id="calendar-header">
@@ -3258,9 +3256,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }]
                 },
                 options: {
-                    layout: {
-                        padding: 15
-                    },
+                    layout: { padding: 2 },
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
@@ -3301,9 +3297,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }]
                 },
                 options: {
-                    layout: {
-                        padding: 15
-                    },
+                    layout: { padding: 2 },
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
@@ -3333,7 +3327,7 @@ document.addEventListener('DOMContentLoaded', function() {
         monthYearDisplay.textContent = `${year}年 ${month + 1}月`;
         monthYearDisplay.style.fontSize = '1.5rem';
         monthYearDisplay.style.fontWeight = '700';
-        document.querySelectorAll('.summary-section h3, #recommendation-section h2').forEach(title => {
+        document.querySelectorAll('#home-screen .summary-section h3, #home-screen #recommendation-section h3').forEach(title => {
             title.style.fontSize = '1.5rem';
             title.style.fontWeight = '700';
         });
