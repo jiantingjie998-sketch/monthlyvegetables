@@ -952,6 +952,18 @@
         .day-cell.has-data { background-color: #e4ede4; }
         .day-cell.has-data.today { background-color: #d8e2d8; }
         .day-cell.empty-cell { cursor: default; }
+        .day-photo-indicator {
+            position: absolute;
+            top: 1px; /* 向上移動 3px，使其視覺上更靠上 */
+            right: 6px;
+            width: 14px;
+            height: 14px;
+            color: var(--accent-color); /* 改回柔和的鼠尾草綠，色塊設計下質感更佳 */
+            opacity: 0.9;
+        }
+        .day-photo-indicator svg {
+            fill: currentColor; /* 改為實心填色 */
+        }
         
         @media (max-width: 420px) { /* 針對特別窄的螢幕縮小字體 */
             .day-cell {
@@ -3375,11 +3387,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (dateString === todayString) dayCell.classList.add('today');
 
-            const items = eatenState[dateString]?.items || {};
+            const dailyRecord = eatenState[dateString];
+            const items = dailyRecord?.items || {};
+            const photos = dailyRecord?.photos || [];
+
             const count = Object.values(items).filter(isEaten => isEaten === true).length;
             if (count > 0) {
                 dayCell.classList.add('has-data');
                 dayCell.innerHTML += `<span class="day-count">${count}</span>`;
+            }
+
+            // 如果當天有照片，則新增照片圖示 (修正)
+            if (photos.length > 0) {
+                const photoIndicator = document.createElement('div');
+                photoIndicator.className = 'day-photo-indicator';
+                photoIndicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M1 5.25A2.25 2.25 0 0 1 3.25 3h13.5A2.25 2.25 0 0 1 19 5.25v9.5A2.25 2.25 0 0 1 16.75 17H3.25A2.25 2.25 0 0 1 1 14.75v-9.5Zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75v-2.69l-2.22-2.219a.75.75 0 0 0-1.06 0l-1.91 1.909a.75.75 0 0 1-1.06 0l-2.09-2.09a.75.75 0 0 0-1.06 0l-3.94 3.94ZM10 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clip-rule="evenodd" /></svg>`;
+                dayCell.appendChild(photoIndicator);
             }
 
             dayCell.addEventListener('click', () => {
