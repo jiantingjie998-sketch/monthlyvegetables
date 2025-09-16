@@ -975,6 +975,20 @@
             .day-count {
                 font-size: 1.0em;
             }
+            /* 在窄螢幕上將照片圖示改為與計數顏色一致的小圓點 */
+            .day-photo-indicator {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background-color: var(--btn-save-bg); /* 與計數顏色一致 */
+                opacity: 0.85; /* 與計數顏色透明度一致 */
+                top: 5px;
+                right: 5px;
+                color: transparent; /* 確保在極端情況下 SVG 顏色不會顯示 */
+            }
+            .day-photo-indicator svg {
+                display: none; /* 隱藏 SVG 圖示 */
+            }
         }
         
         @media (min-width: 769px) { /* 在寬螢幕上縮小日期格高度 */
