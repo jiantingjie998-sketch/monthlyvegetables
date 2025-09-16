@@ -193,7 +193,7 @@
         /* --- 蔬菜格線容器 (可折疊) --- */
         .vegetable-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
             gap: 0.75rem;
             width: 100%;
             margin-top: 1rem;
@@ -214,8 +214,8 @@
         #recommendation-section:not(.collapsed) #recommendation-grid {
             max-height: 420px; /* 約3排蔬菜的高度 */
             overflow-y: auto;
-            padding-top: 4px; /* 新增：與 vegetable-grid 保持一致 */
-            padding-right: 8px; /* 為滾動條留出空間 */
+            padding-top: 4px;
+            padding-inline-end: 8px; /* 為滾動條留出空間，比 padding-right 更好 */
             scrollbar-width: thin;
             scrollbar-color: var(--accent-color) transparent;
         }
@@ -235,7 +235,7 @@
         @media (max-width: 768px) {
             #recommendation-section:not(.collapsed) #recommendation-grid {
                 max-height: 330px; /* 在手機上略微降低高度 */
-                padding-right: 8px;
+                padding-inline-end: 8px;
             }
         }
 
@@ -1408,6 +1408,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let dailyBarChart = null;   // 長條圖的實例
     let isStorageAvailable = true; // 追蹤 localStorage 是否可用
     let calendarDate = new Date(); // 用於月曆的目前日期
+    let homeTreemapPage = 0; // 首頁 Treemap 分頁狀態
 
     const summarySection = document.getElementById('daily-summary-section');
     const selectModeBtn = document.getElementById('select-mode-btn');
@@ -3165,8 +3166,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function generateHomeTreemap(startDateStr, endDateStr) {
         const canvas = document.getElementById('home-treemap-chart');
         if (!canvas) return;
-
-        let currentTreemapPage = 0; // Treemap 分頁狀態
         const ctx = canvas.getContext('2d');
         const computedStyle = getComputedStyle(document.documentElement);
         const datesInRange = getDatesInRange(startDateStr, endDateStr);
@@ -3218,28 +3217,57 @@ document.addEventListener('DOMContentLoaded', function() {
             let dataForChart;
 
             if (isMobile && treemapData.length > TREEMAP_PAGE_SIZE) {
+                // 分頁邏輯
                 for (let i = 0; i < treemapData.length; i += TREEMAP_PAGE_SIZE) {
                     pages.push(treemapData.slice(i, i + TREEMAP_PAGE_SIZE));
                 }
 
-                if (currentTreemapPage >= pages.length) {
-                    currentTreemapPage = pages.length - 1;
+                if (homeTreemapPage >= pages.length) {
+                    homeTreemapPage = pages.length - 1;
                 }
-                dataForChart = pages[currentTreemapPage];
+                dataForChart = pages[homeTreemapPage];
 
+                // 渲染分頁圓點
                 pages.forEach((_, index) => {
                     const dot = document.createElement('span');
                     dot.className = 'pagination-dot';
-                    if (index === currentTreemapPage) {
+                    if (index === homeTreemapPage) {
                         dot.classList.add('active');
                     }
                     dot.dataset.page = index;
                     dot.addEventListener('click', () => {
-                        currentTreemapPage = index;
+                        homeTreemapPage = index;
                         generateHomeTreemap(startDateStr, endDateStr);
                     });
                     paginationContainer.appendChild(dot);
                 });
+
+                // 增加手勢滑動功能
+                if (!canvas.dataset.swipeListenersAttached) {
+                    let touchStartX = 0;
+                    let touchEndX = 0;
+
+                    canvas.addEventListener('touchstart', e => {
+                        touchStartX = e.changedTouches[0].screenX;
+                        touchEndX = touchStartX; // 重置
+                    }, { passive: true });
+
+                    canvas.addEventListener('touchmove', e => {
+                        touchEndX = e.changedTouches[0].screenX;
+                    }, { passive: true });
+
+                    canvas.addEventListener('touchend', () => {
+                        const swipeDistance = touchEndX - touchStartX;
+                        if (swipeDistance > 50 && homeTreemapPage > 0) { // 向右滑
+                            homeTreemapPage--;
+                            generateHomeTreemap(startDateStr, endDateStr);
+                        } else if (swipeDistance < -50 && homeTreemapPage < pages.length - 1) { // 向左滑
+                            homeTreemapPage++;
+                            generateHomeTreemap(startDateStr, endDateStr);
+                        }
+                    }, { passive: true });
+                    canvas.dataset.swipeListenersAttached = 'true';
+                }
             } else {
                 dataForChart = treemapData;
             }
