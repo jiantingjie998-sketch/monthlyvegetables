@@ -885,20 +885,20 @@
             width: 100%;
             background: #fff;
             border-radius: 12px;
-            padding: 1.0rem; /* 統一區塊 padding */
+            padding: 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid #e5e5e5;
             box-sizing: border-box; /* 確保 padding 不會撐開寬度 */
         margin-bottom: 1.5rem;
     }
     #home-screen .summary-section {
-        padding: 1.0rem; /* 統一區塊 padding */
+        padding: 1.5rem; /* 與月曆區塊的 padding 一致 */
         }
         #home-screen #recommendation-section {
             width: 100%;
             background: #fff;
             border-radius: 12px;
-        padding: 1.0rem; /* 統一區塊 padding */
+        padding: 1.5rem; /* 與月曆區塊的 padding 一致 */
             box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid #e5e5e5;
@@ -1237,11 +1237,6 @@
             </div>
         </div>
     </div>
-
-    <!-- HTML 模板，用於存放重複使用的元素，例如圖示 -->
-    <template id="icon-templates">
-        <svg id="photo-indicator-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M1 5.25A2.25 2.25 0 0 1 3.25 3h13.5A2.25 2.25 0 0 1 19 5.25v9.5A2.25 2.25 0 0 1 16.75 17H3.25A2.25 2.25 0 0 1 1 14.75v-9.5Zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75v-2.69l-2.22-2.219a.75.75 0 0 0-1.06 0l-1.91 1.909a.75.75 0 0 1-1.06 0l-2.09-2.09a.75.75 0 0 0-1.06 0l-3.94 3.94ZM10 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clip-rule="evenodd" /></svg>
-    </template>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -3323,7 +3318,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }]
                 },
                 options: {
-                    animation: false, /* 關閉切換動畫，避免視覺跳動 */
                     layout: { padding: 2 },
                     responsive: true,
                     maintainAspectRatio: false,
@@ -3442,17 +3436,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const count = Object.values(items).filter(isEaten => isEaten === true).length;
             if (count > 0) {
                 dayCell.classList.add('has-data');
-                const countEl = document.createElement('span');
-                countEl.className = 'day-count';
-                countEl.textContent = count;
-                dayCell.appendChild(countEl);
+                dayCell.innerHTML += `<span class="day-count">${count}</span>`;
             }
 
             // 如果當天有照片，則新增照片圖示 (修正)
             if (photos.length > 0) {
                 const photoIndicator = document.createElement('div');
                 photoIndicator.className = 'day-photo-indicator';
-                photoIndicator.innerHTML = document.getElementById('photo-indicator-icon').outerHTML;
+                photoIndicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M1 5.25A2.25 2.25 0 0 1 3.25 3h13.5A2.25 2.25 0 0 1 19 5.25v9.5A2.25 2.25 0 0 1 16.75 17H3.25A2.25 2.25 0 0 1 1 14.75v-9.5Zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75v-2.69l-2.22-2.219a.75.75 0 0 0-1.06 0l-1.91 1.909a.75.75 0 0 1-1.06 0l-2.09-2.09a.75.75 0 0 0-1.06 0l-3.94 3.94ZM10 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clip-rule="evenodd" /></svg>`;
                 dayCell.appendChild(photoIndicator);
             }
 
