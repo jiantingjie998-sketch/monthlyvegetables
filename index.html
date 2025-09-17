@@ -1656,8 +1656,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 如果在多日模式下，強制關閉選擇模式
-        if (isMultiDay && summarySection.classList.contains('selection-mode')) {
+        // 每次切換日期時，都應該退出選擇模式，確保按鈕是「+」的初始狀態
+        if (summarySection.classList.contains('selection-mode')) {
             summarySection.classList.remove('selection-mode');
         }
 
@@ -3318,7 +3318,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }]
                 },
                 options: {
-                    animation: false,
                     layout: { padding: 2 },
                     responsive: true,
                     maintainAspectRatio: false,
