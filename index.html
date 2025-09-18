@@ -1241,6 +1241,47 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let cameraStream = null;
+
+    // --- IndexedDB Helper ---
+    // A simple key-value store using IndexedDB, which has a much larger storage capacity than localStorage.
+    const idb = {
+        db: null,
+        async open() {
+            if (this.db) return;
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('VegetableDB', 1);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('appData')) {
+                        db.createObjectStore('appData', { keyPath: 'key' });
+                    }
+                };
+                request.onsuccess = (event) => {
+                    this.db = event.target.result;
+                    resolve();
+                };
+                request.onerror = (event) => {
+                    console.error('IndexedDB error:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        },
+        async set(key, value) {
+            await this.open();
+            const transaction = this.db.transaction(['appData'], 'readwrite');
+            const store = transaction.objectStore('appData');
+            return store.put({ key, value });
+        },
+        async get(key) {
+            await this.open();
+            const request = this.db.transaction(['appData'], 'readonly').objectStore('appData').get(key);
+            return new Promise(resolve => {
+                request.onsuccess = () => resolve(request.result?.value);
+                request.onerror = () => resolve(undefined); // Return undefined on error
+            });
+        },
+    };
+
     // Chart.js Plugin to draw text inside the doughnut chart
     const doughnutTextPlugin = {
         id: 'doughnutText',
@@ -1435,12 +1476,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 日期範圍變數
     let startDate, endDate;
 
-    function safeSetItem(key, value) {
+    async function safeSetItem(key, value) {
         if (!isStorageAvailable) return;
         try {
-            localStorage.setItem(key, value);
+            await idb.set(key, value);
         } catch (e) {
-            console.error(`Error saving to localStorage: ${e}`);
+            console.error(`Error saving to IndexedDB: ${e}`);
             if (isStorageAvailable) { // Show the warning only once
                 alert('由於您目前使用的環境限制，可能無法自動儲存您的紀錄');
             }
@@ -1448,30 +1489,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function safeGetItem(key) {
+    async function safeGetItem(key) {
+        if (!isStorageAvailable) return null;
         try {
-            return localStorage.getItem(key);
+            return await idb.get(key);
         } catch (e) {
-            console.error(`Error reading from localStorage: ${e}`);
+            console.error(`Error reading from IndexedDB: ${e}`);
             isStorageAvailable = false;
             return null;
         }
     }
 
-    function saveData() {
-        safeSetItem('vegetablesData', JSON.stringify(vegetables));
-        safeSetItem('eatenVeggiesDaily', JSON.stringify(eatenState));
-        safeSetItem('categoryCollapseState', JSON.stringify(categoryCollapseState));
-        safeSetItem('recommendationCollapseState', JSON.stringify(recommendationCollapseState));
+    async function saveData() {
+        await Promise.all([
+            safeSetItem('vegetablesData', vegetables),
+            safeSetItem('eatenVeggiesDaily', eatenState),
+            safeSetItem('categoryCollapseState', categoryCollapseState),
+            safeSetItem('recommendationCollapseState', recommendationCollapseState)
+        ]);
     }
 
-    function loadData() {
-        const storedVeggiesJSON = safeGetItem('vegetablesData');
-        const storedVersion = safeGetItem('dataVersion');
-        let loadedVeggies = storedVeggiesJSON ? JSON.parse(storedVeggiesJSON) : null;
+    async function loadData() {
+        const storedVeggies = await safeGetItem('vegetablesData');
+        const storedVersion = await safeGetItem('dataVersion');
+        let loadedVeggies = storedVeggies || null;
         let migrationOccurred = false; // 標記是否執行了資料合併
 
-        // 如果版本不符或沒有本地資料，則進行處理
+        // 如果版本不符或沒有本地資料，則進行合併與更新
         if (!loadedVeggies || storedVersion !== dataVersion) {
             migrationOccurred = true;
 
@@ -1487,7 +1531,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const baseVeggies = structuredClone(defaultVegetables);
             
-            if (loadedVeggies) { // 如果存在舊資料，則進行合併
+            if (loadedVeggies && Object.keys(loadedVeggies).length > 0) { // 如果存在舊資料，則進行合併
                 const mergedVeggies = {};
                 const processedNames = new Set();
 
@@ -1546,14 +1590,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 vegetables = baseVeggies;
             }
             // 更新/儲存合併後的資料和新版本號
-            safeSetItem('vegetablesData', JSON.stringify(vegetables));
-            safeSetItem('dataVersion', dataVersion);
+            await safeSetItem('vegetablesData', vegetables);
+            await safeSetItem('dataVersion', dataVersion);
+
         } else {
             // 版本相符，直接從本地儲存載入
             vegetables = loadedVeggies;
         }
 
-        const storedEatenState = JSON.parse(safeGetItem('eatenVeggiesDaily')) || {};
+        const storedEatenState = await safeGetItem('eatenVeggiesDaily') || {};
 
         // 如果執行了資料合併，則對攝取紀錄進行遷移
         if (migrationOccurred) {
@@ -1608,19 +1653,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        categoryCollapseState = JSON.parse(safeGetItem('categoryCollapseState')) || {};
+        categoryCollapseState = await safeGetItem('categoryCollapseState') || {};
         
         // Migrate collapse state if a migration occurred (e.g., category rename)
         if (migrationOccurred && categoryCollapseState['瓜果'] !== undefined) {
             categoryCollapseState['瓜果莖'] = categoryCollapseState['瓜果'];
             delete categoryCollapseState['瓜果'];
-            safeSetItem('categoryCollapseState', JSON.stringify(categoryCollapseState)); // Persist the change
+            await safeSetItem('categoryCollapseState', categoryCollapseState); // Persist the change
         }
 
-        recommendationCollapseState = JSON.parse(safeGetItem('recommendationCollapseState'));
+        recommendationCollapseState = await safeGetItem('recommendationCollapseState');
 
         Object.keys(vegetables).forEach(category => {
-            if (categoryCollapseState[category] === undefined) {
+            if (typeof categoryCollapseState[category] === 'undefined') {
                 categoryCollapseState[category] = (category !== '葉菜');
             }
         });
@@ -1645,7 +1690,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('camera-btn').disabled = isMultiDay;
         document.getElementById('reset-button').disabled = isMultiDay;
 
-        const buttonsToToggle = [selectModeBtn, document.getElementById('reset-button'), document.getElementById('camera-btn')];
+        const buttonsToToggle = [selectModeBtn, document.getElementById('reset-button'), document.getElementById('camera-btn'), document.getElementById('upload-photo-input')];
         buttonsToToggle.forEach(btn => {
             if (isMultiDay) {
                 btn.style.opacity = 0.5;
@@ -1656,8 +1701,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 每次切換日期時，都應該退出選擇模式，確保按鈕是「+」的初始狀態
-        if (summarySection.classList.contains('selection-mode')) {
+        // 如果在多日模式下，強制關閉選擇模式
+        if (isMultiDay && summarySection.classList.contains('selection-mode')) {
             summarySection.classList.remove('selection-mode');
         }
 
@@ -1874,16 +1919,31 @@ document.addEventListener('DOMContentLoaded', function() {
         datesInRange.forEach(dateStr => {
             const dailyPhotos = eatenState[dateStr]?.photos || [];
             dailyPhotos.forEach((photo, index) => {
+                // Handle both Blob (new) and Base64 string (old) formats
+                let displayUrl;
+                let isBlob = false;
+                if (photo.url instanceof Blob) {
+                    displayUrl = URL.createObjectURL(photo.url);
+                    isBlob = true;
+                } else if (typeof photo.url === 'string' && photo.url.startsWith('data:image')) {
+                    displayUrl = photo.url; // It's an old Base64 string
+                } else {
+                    console.warn('Unsupported photo data format for date:', dateStr, photo);
+                    return; // Skip this photo if format is unknown
+                }
+
                 allPhotosInRange.push({
                     ...photo,
+                    displayUrl: displayUrl,
+                    isBlob: isBlob, // Flag to know if we need to revoke the URL
                     date: dateStr,
-                    originalIndex: index // 保留原始索引，用於單日模式下的刪除
+                    originalIndex: index
                 });
             });
         });
 
         // 依日期排序
-        allPhotosInRange.sort((a, b) => new Date(a.date) - new Date(b.date));
+        allPhotosInRange.sort((a, b) => new Date(a.date) - new Date(b.date) || a.originalIndex - b.originalIndex);
 
         if (allPhotosInRange.length > 0) {
             allPhotosInRange.forEach(photoData => {
@@ -1891,7 +1951,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 wrapper.className = 'photo-thumbnail-wrapper';
 
                 const img = document.createElement('img');
-                img.src = photoData.url;
+                img.src = photoData.displayUrl;
                 img.className = 'photo-thumbnail';
                 img.alt = `攝取紀錄照片 (${photoData.date})`;
                 img.title = photoData.date; // 滑鼠懸停時顯示日期
@@ -1910,6 +1970,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 photoGallery.appendChild(wrapper);
             });
+
+            // Clean up object URLs after rendering to prevent memory leaks
+            photoGallery.addEventListener('load', () => {
+                allPhotosInRange.forEach(p => {
+                    if (p.isBlob) {
+                        URL.revokeObjectURL(p.displayUrl);
+                    }
+                });
+            }, { once: true });
         }
         renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts, traceElementCounts);
 
@@ -2831,28 +2900,33 @@ document.addEventListener('DOMContentLoaded', function() {
     editForm.addEventListener('submit', handleFormSubmit);
 
     // --- 圖片壓縮輔助函式 ---
-    function compressImage(file, quality = 0.7, maxWidth = 800) {
+    function compressImage(file, quality = 0.7, maxWidth = 800, returnType = 'blob') {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = event => {
                 const img = new Image();
                 img.src = event.target.result;
-                img.onload = () => {
+                img.onload = async () => {
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-
+    
                     if (width > maxWidth) {
                         height = (maxWidth / width) * height;
                         width = maxWidth;
                     }
-
+    
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
+
+                    if (returnType === 'blob') {
+                        canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+                    } else {
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    }
                 };
                 img.onerror = error => reject(error);
             };
@@ -2873,27 +2947,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         stopCamera(); // 選擇照片後，關閉相機
 
-        const compressionPromises = Array.from(files).map(file => compressImage(file));
+        const compressionPromises = Array.from(files).map(file => compressImage(file, 0.7, 800, 'blob'));
 
         try {
-            const imageDataUrls = await Promise.all(compressionPromises);
+            const imageBlobs = await Promise.all(compressionPromises);
             
             if (!eatenState[startDate]) eatenState[startDate] = { items: {}, photos: [] };
 
             const allRecognizedItems = new Set();
 
-            imageDataUrls.forEach(url => {
+            imageBlobs.forEach(blob => {
                 const recognizedVeggies = simulateRecognition(); // 模擬辨識
                 const recognizedVegNames = recognizedVeggies.map(v => v.name);
                 recognizedVegNames.forEach(name => allRecognizedItems.add(name));
 
-                eatenState[startDate].photos.push({ url: url, recognizedItems: recognizedVegNames });
+                eatenState[startDate].photos.push({ url: blob, recognizedItems: recognizedVegNames });
             });
 
             allRecognizedItems.forEach(name => eatenState[startDate].items[name] = true);
             saveData();
             updateView();
-            alert(`新增完成！已從 ${imageDataUrls.length} 張照片中自動加入：${Array.from(allRecognizedItems).join('、')}`);
+            alert(`新增完成！已從 ${imageBlobs.length} 張照片中自動加入：${Array.from(allRecognizedItems).join('、')}`);
         } catch (error) {
             console.error("讀取照片檔案時出錯:", error);
             alert("讀取照片時發生錯誤。");
@@ -2952,7 +3026,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } else if (thumbnail) {
             // 點擊了照片縮圖 (開啟檢視器)
-            document.getElementById('photo-viewer-modal-image').src = thumbnail.src;
+            const imageSrc = thumbnail.src; // src is an object URL
+            document.getElementById('photo-viewer-modal-image').src = imageSrc;
             photoViewerModal.style.display = 'flex';
         }
     });
@@ -3033,7 +3108,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    document.getElementById('capture-btn').addEventListener('click', () => {
+    document.getElementById('capture-btn').addEventListener('click', async () => {
         const video = document.getElementById('camera-view');
         const canvas = document.getElementById('camera-canvas');
         const maxWidth = 800; // 與相簿上傳的壓縮設定一致
@@ -3054,8 +3129,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const context = canvas.getContext('2d');
         context.drawImage(video, 0, 0, width, height); // 繪製縮放後的圖片
         
-        // 將照片以較低品質、較小尺寸儲存，以節省空間
-        const imageDataUrl = canvas.toDataURL('image/jpeg', quality);
+        // 將照片轉為 Blob 格式以節省空間
+        const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
 
         stopCamera();
         // 拍照後，直接將照片加入當日紀錄，並模擬辨識
@@ -3064,7 +3139,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!eatenState[startDate]) eatenState[startDate] = { items: {}, photos: [] };
         
-        eatenState[startDate].photos.push({ url: imageDataUrl, recognizedItems: recognizedVegNames });
+        eatenState[startDate].photos.push({ url: imageBlob, recognizedItems: recognizedVegNames });
         recognizedVegNames.forEach(name => eatenState[startDate].items[name] = true);
         
         saveData();
@@ -3456,12 +3531,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function initializeApp() {
+    async function initializeApp() {
+        // --- Data Migration from localStorage to IndexedDB ---
+        const lsVeggies = localStorage.getItem('vegetablesData');
+        const idbVeggies = await idb.get('vegetablesData');
+
+        // If localStorage has data but IndexedDB is empty, perform migration.
+        if (lsVeggies && !idbVeggies) {
+            console.log("Migrating data from localStorage to IndexedDB...");
+            try {
+                const dataKeys = ['vegetablesData', 'eatenVeggiesDaily', 'categoryCollapseState', 'recommendationCollapseState', 'dataVersion'];
+                for (const key of dataKeys) {
+                    const lsData = localStorage.getItem(key);
+                    if (lsData) {
+                        // The 'eatenVeggiesDaily' contains photo data which is now stored as Blobs,
+                        // but old data is base64. For simplicity, we'll migrate it as is.
+                        // New photos will be stored as Blobs. This might cause issues if not handled,
+                        // but for this migration, we assume the structure is compatible enough.
+                        // A more robust migration would convert base64 to blobs here.
+                        await idb.set(key, JSON.parse(lsData));
+                    }
+                }
+                // Clear localStorage after successful migration
+                dataKeys.forEach(key => localStorage.removeItem(key));
+                alert('資料儲存方式已升級，您的紀錄已成功轉移。');
+            } catch (error) {
+                console.error("Data migration failed:", error);
+                alert('資料轉移失敗，請手動備份後聯繫開發者。');
+            }
+        }
+
+        await loadData();
         showHomeScreen();
     }
 
     // Initial Load
-    loadData();
     initializeApp();
 });
 </script>
