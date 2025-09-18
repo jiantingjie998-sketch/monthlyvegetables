@@ -2641,6 +2641,20 @@ document.addEventListener('DOMContentLoaded', function() {
         closeModal(editModal);
     }
     
+    // --- Blob <-> Base64 轉換輔助函式 ---
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    function base64ToBlob(base64, mimeType) {
+        return fetch(base64).then(res => res.blob());
+    }
+
     // --- 資料匯出/匯入功能 ---
     function downloadDataAsJson() {
         // 為了確保資料完整性，特別是包含 Base64 照片的 photos 陣列，
@@ -2666,7 +2680,7 @@ document.addEventListener('DOMContentLoaded', function() {
             recommendationCollapseState: recommendationCollapseState
         };
 
-        const dataStr = JSON.stringify(dataToSave, null, 2); // 格式化JSON，方便閱讀
+        const dataStr = JSON.stringify(dataToSave); // 使用更緊湊的格式
         const dataBlob = new Blob([dataStr], {type: "application/json"});
         const url = URL.createObjectURL(dataBlob);
 
@@ -2675,6 +2689,49 @@ document.addEventListener('DOMContentLoaded', function() {
         const localToday = toLocalISOString(new Date()); // 修正：使用本地日期而非 UTC 日期
         link.download = `veg-backup-${localToday}.json`;
         
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    async function downloadDataAsJson() {
+        const cleanEatenState = {};
+        // 異步處理照片轉換
+        for (const date in eatenState) {
+            const dailyEntry = eatenState[date];
+            if (dailyEntry) {
+                const newPhotos = [];
+                for (const photo of (dailyEntry.photos || [])) {
+                    let url = photo.url;
+                    // 如果是 Blob，轉換為 Base64
+                    if (photo.url instanceof Blob) {
+                        url = await blobToBase64(photo.url);
+                    }
+                    newPhotos.push({ ...photo, url });
+                }
+                cleanEatenState[date] = {
+                    items: dailyEntry.items || {},
+                    photos: newPhotos
+                };
+            }
+        }
+
+        const dataToSave = {
+            version: dataVersion,
+            vegetables: vegetables,
+            eatenState: cleanEatenState,
+            categoryCollapseState: categoryCollapseState,
+            recommendationCollapseState: recommendationCollapseState
+        };
+
+        const dataStr = JSON.stringify(dataToSave);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        const localToday = toLocalISOString(new Date());
+        link.download = `veg-backup-${localToday}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
