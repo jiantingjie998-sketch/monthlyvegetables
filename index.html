@@ -2626,6 +2626,123 @@ document.addEventListener('DOMContentLoaded', function() {
         closeModal(editModal);
     }
     
+    // --- Blob <-> Base64 轉換輔助函式 ---
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    function base64ToBlob(base64) {
+        return fetch(base64).then(res => res.blob());
+    }
+
+    // --- 資料匯出/匯入功能 (已更新為 IndexedDB 和 Blob 格式) ---
+    async function downloadDataAsJson() {
+        const cleanEatenState = {};
+        // 異步處理照片轉換
+        for (const date in eatenState) {
+            const dailyEntry = eatenState[date];
+            if (dailyEntry) {
+                const newPhotos = [];
+                for (const photo of (dailyEntry.photos || [])) {
+                    let url = photo.url;
+                    // 如果是 Blob，轉換為 Base64
+                    if (photo.url instanceof Blob) {
+                        url = await blobToBase64(photo.url);
+                    }
+                    newPhotos.push({ ...photo, url });
+                }
+                cleanEatenState[date] = {
+                    items: dailyEntry.items || {},
+                    photos: newPhotos
+                };
+            }
+        }
+
+        const dataToSave = {
+            version: dataVersion,
+            vegetables: vegetables,
+            eatenState: cleanEatenState,
+            categoryCollapseState: categoryCollapseState,
+            recommendationCollapseState: recommendationCollapseState
+        };
+
+        const dataStr = JSON.stringify(dataToSave);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        const localToday = toLocalISOString(new Date());
+        link.download = `veg-backup-${localToday}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    async function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        closeModal(managementModal);
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data && data.vegetables && data.eatenState) {
+                    showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", async () => {
+                        vegetables = data.vegetables;
+                        
+                        const importedEatenState = data.eatenState;
+                        eatenState = {}; // 清空目前的狀態
+
+                        // 將 Base64 轉回 Blob
+                        for (const date in importedEatenState) {
+                            const entry = importedEatenState[date];
+                            if (!entry) continue;
+
+                            const newPhotos = [];
+                            for (const photo of (entry.photos || [])) {
+                                let url = photo.url;
+                                if (typeof url === 'string' && url.startsWith('data:image')) {
+                                    url = await base64ToBlob(url);
+                                }
+                                newPhotos.push({ ...photo, url });
+                            }
+
+                            eatenState[date] = {
+                                items: entry.items || {},
+                                photos: newPhotos
+                            };
+                        }
+
+                        categoryCollapseState = data.categoryCollapseState || {};
+                        recommendationCollapseState = data.recommendationCollapseState !== undefined ? data.recommendationCollapseState : null;
+                        
+                        await safeSetItem('dataVersion', data.version || dataVersion);
+
+                        await saveData(); // 等待所有資料儲存完成
+                        updateView(); // 重新渲染畫面
+                        alert('資料已成功載入！');
+                    });
+                } else {
+                    alert('檔案格式不符或已損毀，載入失敗。');
+                }
+            } catch (error) {
+                console.error("解析 JSON 檔案時出錯:", error);
+                alert('讀取檔案時發生錯誤，請確認檔案為有效的 JSON 格式。');
+            } finally {
+                event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+
     // --- 資料匯出/匯入功能 ---
     function downloadDataAsJson() {
         // 為了確保資料完整性，特別是包含 Base64 照片的 photos 陣列，
@@ -3521,7 +3638,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const lsVeggies = localStorage.getItem('vegetablesData');
         const idbVeggies = await idb.get('vegetablesData');
 
-        // If localStorage has data but IndexedDB is empty, perform migration.
+        // 如果 localStorage 有資料但 IndexedDB 是空的，則執行轉移。
         if (lsVeggies && !idbVeggies) {
             console.log("Migrating data from localStorage to IndexedDB...");
             try {
@@ -3529,11 +3646,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (const key of dataKeys) {
                     const lsData = localStorage.getItem(key);
                     if (lsData) {
-                        // The 'eatenVeggiesDaily' contains photo data which is now stored as Blobs,
-                        // but old data is base64. For simplicity, we'll migrate it as is.
-                        // New photos will be stored as Blobs. This might cause issues if not handled,
-                        // but for this migration, we assume the structure is compatible enough.
-                        // A more robust migration would convert base64 to blobs here.
                         await idb.set(key, JSON.parse(lsData));
                     }
                 }
