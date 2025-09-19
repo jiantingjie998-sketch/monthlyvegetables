@@ -530,6 +530,25 @@
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+        .photo-thumbnail-placeholder {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background-color: var(--placeholder-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .spinner-small {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent-color);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         @media (hover: hover) and (pointer: fine) {
             .remove-photo-btn {
                 opacity: 0;
@@ -1653,6 +1672,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // --- Data Structure Migration: Convert old Base64 photos to Blobs ---
+        let hasOldPhotoFormat = false;
+        for (const date in eatenState) {
+            const entry = eatenState[date];
+            if (entry && Array.isArray(entry.photos)) {
+                for (const photo of entry.photos) {
+                    if (typeof photo.url === 'string' && photo.url.startsWith('data:image')) {
+                        hasOldPhotoFormat = true;
+                        photo.url = await base64ToBlob(photo.url); // Convert and replace
+                    }
+                }
+            }
+        }
+        if (hasOldPhotoFormat) {
+            console.log("Migrating old Base64 photos to Blobs...");
+            await safeSetItem('eatenVeggiesDaily', eatenState); // Save back the converted data
+        }
+
         categoryCollapseState = await safeGetItem('categoryCollapseState') || {};
         
         // Migrate collapse state if a migration occurred (e.g., category rename)
@@ -1946,33 +1983,43 @@ document.addEventListener('DOMContentLoaded', function() {
         allPhotosInRange.sort((a, b) => new Date(a.date) - new Date(b.date) || a.originalIndex - b.originalIndex);
 
         if (allPhotosInRange.length > 0) {
-            allPhotosInRange.forEach(photoData => {
+            allPhotosInRange.forEach((photoData, i) => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'photo-thumbnail-wrapper';
-
+        
+                // 1. Create and append a placeholder with a spinner
+                const placeholder = document.createElement('div');
+                placeholder.className = 'photo-thumbnail-placeholder';
+                placeholder.innerHTML = `<div class="spinner-small"></div>`;
+                wrapper.appendChild(placeholder);
+        
+                // 2. Create the image element in memory
                 const img = document.createElement('img');
                 img.src = photoData.displayUrl;
                 img.className = 'photo-thumbnail';
                 img.alt = `攝取紀錄照片 (${photoData.date})`;
                 img.title = photoData.date; // 滑鼠懸停時顯示日期
-
-                wrapper.appendChild(img);
-
-                // 僅在單日模式下顯示刪除按鈕
-                if (!isMultiDay) {
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'remove-photo-btn';
-                    removeBtn.title = '刪除照片';
-                    removeBtn.dataset.index = photoData.originalIndex;
-                    removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
-                    wrapper.appendChild(removeBtn);
-                }
+        
+                // 3. When the image is loaded, replace the placeholder
+                img.onload = () => {
+                    // Only add the remove button after the image is ready
+                    if (!isMultiDay) {
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'remove-photo-btn';
+                        removeBtn.title = '刪除照片';
+                        removeBtn.dataset.index = photoData.originalIndex;
+                        removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+                        wrapper.appendChild(removeBtn);
+                    }
+                    wrapper.replaceChild(img, placeholder);
+                };
+                img.onerror = () => {
+                    placeholder.innerHTML = '⚠️'; // Show an error icon if loading fails
+                };
                 
                 photoGallery.appendChild(wrapper);
             });
-        }
-        renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts, traceElementCounts);
-
+        }        renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts, traceElementCounts);
         // 根據日期選擇，決定是否顯示每日長條圖
         const dailyChartContainer = document.getElementById('daily-chart-container');
 
@@ -2739,7 +2786,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const data = JSON.parse(e.target.result);
+                const data = JSON.parse(e.target.result); // This can be slow for large files
                 // 驗證檔案結構，確保是有效的備份檔
                 if (data && data.vegetables && data.eatenState) { // 只需驗證核心資料是否存在
                     showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", () => {
@@ -2773,7 +2820,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         saveData(); // 將新資料存入 localStorage
                         updateView(); // 重新渲染畫面
-                        closeModal(managementModal); // 關閉管理選項對話框
                         alert('資料已成功載入！');
                     });
                 } else {
