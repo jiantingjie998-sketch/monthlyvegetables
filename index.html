@@ -530,25 +530,6 @@
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-        .photo-thumbnail-placeholder {
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
-            background-color: var(--placeholder-bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .spinner-small {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--accent-color);
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
         @media (hover: hover) and (pointer: fine) {
             .remove-photo-btn {
                 opacity: 0;
@@ -1672,24 +1653,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // --- Data Structure Migration: Convert old Base64 photos to Blobs ---
-        let hasOldPhotoFormat = false;
-        for (const date in eatenState) {
-            const entry = eatenState[date];
-            if (entry && Array.isArray(entry.photos)) {
-                for (const photo of entry.photos) {
-                    if (typeof photo.url === 'string' && photo.url.startsWith('data:image')) {
-                        hasOldPhotoFormat = true;
-                        photo.url = await base64ToBlob(photo.url); // Convert and replace
-                    }
-                }
-            }
-        }
-        if (hasOldPhotoFormat) {
-            console.log("Migrating old Base64 photos to Blobs...");
-            await safeSetItem('eatenVeggiesDaily', eatenState); // Save back the converted data
-        }
-
         categoryCollapseState = await safeGetItem('categoryCollapseState') || {};
         
         // Migrate collapse state if a migration occurred (e.g., category rename)
@@ -1955,27 +1918,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const allPhotosInRange = [];
         datesInRange.forEach(dateStr => {
             const dailyPhotos = eatenState[dateStr]?.photos || [];
-            dailyPhotos.forEach((photo, index) => {
-                // Handle both Blob (new) and Base64 string (old) formats
-                let displayUrl;
-                let isBlob = false;
-                if (photo.url instanceof Blob) {
-                    displayUrl = URL.createObjectURL(photo.url);
-                    isBlob = true;
-                } else if (typeof photo.url === 'string' && photo.url.startsWith('data:image')) {
-                    displayUrl = photo.url; // It's an old Base64 string
-                } else {
-                    console.warn('Unsupported photo data format for date:', dateStr, photo);
-                    return; // Skip this photo if format is unknown
+            dailyPhotos.forEach((photoData, index) => {
+                // 根據您的要求，只處理新的 Blob 格式照片，舊的 Base64 格式會被忽略
+                if (photoData.url instanceof Blob) {
+                    allPhotosInRange.push({
+                        ...photoData,
+                        displayUrl: URL.createObjectURL(photoData.url),
+                        date: dateStr,
+                        originalIndex: index
+                    });
                 }
-
-                allPhotosInRange.push({
-                    ...photo,
-                    displayUrl: displayUrl,
-                    isBlob: isBlob, // Flag to know if we need to revoke the URL
-                    date: dateStr,
-                    originalIndex: index
-                });
             });
         });
 
@@ -1983,51 +1935,38 @@ document.addEventListener('DOMContentLoaded', function() {
         allPhotosInRange.sort((a, b) => new Date(a.date) - new Date(b.date) || a.originalIndex - b.originalIndex);
 
         if (allPhotosInRange.length > 0) {
-            allPhotosInRange.forEach((photoData, i) => {
+            allPhotosInRange.forEach(photoData => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'photo-thumbnail-wrapper';
-        
-                // 1. Create and append a placeholder with a spinner
-                const placeholder = document.createElement('div');
-                placeholder.className = 'photo-thumbnail-placeholder';
-                placeholder.innerHTML = `<div class="spinner-small"></div>`;
-                wrapper.appendChild(placeholder);
-        
-                // 2. Create the image element in memory
+
                 const img = document.createElement('img');
                 img.src = photoData.displayUrl;
                 img.className = 'photo-thumbnail';
                 img.alt = `攝取紀錄照片 (${photoData.date})`;
                 img.title = photoData.date; // 滑鼠懸停時顯示日期
-        
-                // 3. When the image is loaded, replace the placeholder
-                img.onload = () => {
-                    // Only add the remove button after the image is ready
-                    if (!isMultiDay) {
-                        const removeBtn = document.createElement('button');
-                        removeBtn.className = 'remove-photo-btn';
-                        removeBtn.title = '刪除照片';
-                        removeBtn.dataset.index = photoData.originalIndex;
-                        removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
-                        wrapper.appendChild(removeBtn);
-                    }
-                    wrapper.replaceChild(img, placeholder);
-                };
-                img.onerror = () => {
-                    // First error, try reloading once after a short delay
-                    if (!img.dataset.reloaded) {
-                        img.dataset.reloaded = 'true';
-                        setTimeout(() => { img.src = photoData.displayUrl; }, 500);
-                    } else {
-                        // Second error, now show the error icon
-                        const errorIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 28px; height: 28px; color: var(--text-secondary); opacity: 0.8;"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm1.5-3-2.25-2.25" /></svg>`;
-                        placeholder.innerHTML = errorIconSVG;
-                    }
-                };
+
+                wrapper.appendChild(img);
+
+                // 僅在單日模式下顯示刪除按鈕
+                if (!isMultiDay) {
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-photo-btn';
+                    removeBtn.title = '刪除照片';
+                    removeBtn.dataset.index = photoData.originalIndex;
+                    removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+                    wrapper.appendChild(removeBtn);
+                }
                 
                 photoGallery.appendChild(wrapper);
             });
-        }        renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts, traceElementCounts);
+        }
+
+        // Clean up object URLs after rendering to prevent memory leaks
+        photoGallery.addEventListener('load', () => {
+            allPhotosInRange.forEach(p => URL.revokeObjectURL(p.displayUrl));
+        }, { once: true });
+        renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts, traceElementCounts);
+
         // 根據日期選擇，決定是否顯示每日長條圖
         const dailyChartContainer = document.getElementById('daily-chart-container');
 
@@ -2687,20 +2626,6 @@ document.addEventListener('DOMContentLoaded', function() {
         closeModal(editModal);
     }
     
-    // --- Blob <-> Base64 轉換輔助函式 ---
-    function blobToBase64(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    }
-
-    function base64ToBlob(base64, mimeType) {
-        return fetch(base64).then(res => res.blob());
-    }
-
     // --- 資料匯出/匯入功能 ---
     function downloadDataAsJson() {
         // 為了確保資料完整性，特別是包含 Base64 照片的 photos 陣列，
@@ -2726,7 +2651,7 @@ document.addEventListener('DOMContentLoaded', function() {
             recommendationCollapseState: recommendationCollapseState
         };
 
-        const dataStr = JSON.stringify(dataToSave); // 使用更緊湊的格式
+        const dataStr = JSON.stringify(dataToSave, null, 2); // 格式化JSON，方便閱讀
         const dataBlob = new Blob([dataStr], {type: "application/json"});
         const url = URL.createObjectURL(dataBlob);
 
@@ -2735,49 +2660,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const localToday = toLocalISOString(new Date()); // 修正：使用本地日期而非 UTC 日期
         link.download = `veg-backup-${localToday}.json`;
         
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }
-
-    async function downloadDataAsJson() {
-        const cleanEatenState = {};
-        // 異步處理照片轉換
-        for (const date in eatenState) {
-            const dailyEntry = eatenState[date];
-            if (dailyEntry) {
-                const newPhotos = [];
-                for (const photo of (dailyEntry.photos || [])) {
-                    let url = photo.url;
-                    // 如果是 Blob，轉換為 Base64
-                    if (photo.url instanceof Blob) {
-                        url = await blobToBase64(photo.url);
-                    }
-                    newPhotos.push({ ...photo, url });
-                }
-                cleanEatenState[date] = {
-                    items: dailyEntry.items || {},
-                    photos: newPhotos
-                };
-            }
-        }
-
-        const dataToSave = {
-            version: dataVersion,
-            vegetables: vegetables,
-            eatenState: cleanEatenState,
-            categoryCollapseState: categoryCollapseState,
-            recommendationCollapseState: recommendationCollapseState
-        };
-
-        const dataStr = JSON.stringify(dataToSave);
-        const dataBlob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        const localToday = toLocalISOString(new Date());
-        link.download = `veg-backup-${localToday}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -2794,7 +2676,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const data = JSON.parse(e.target.result); // This can be slow for large files
+                const data = JSON.parse(e.target.result);
                 // 驗證檔案結構，確保是有效的備份檔
                 if (data && data.vegetables && data.eatenState) { // 只需驗證核心資料是否存在
                     showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", () => {
@@ -2828,6 +2710,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         saveData(); // 將新資料存入 localStorage
                         updateView(); // 重新渲染畫面
+                        closeModal(managementModal); // 關閉管理選項對話框
                         alert('資料已成功載入！');
                     });
                 } else {
