@@ -1970,15 +1970,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 photoGallery.appendChild(wrapper);
             });
-
-            // Clean up object URLs after rendering to prevent memory leaks
-            photoGallery.addEventListener('load', () => {
-                allPhotosInRange.forEach(p => {
-                    if (p.isBlob) {
-                        URL.revokeObjectURL(p.displayUrl);
-                    }
-                });
-            }, { once: true });
         }
         renderCharts(itemServingCounts, nutrientCounts, uniqueCategoryCounts, traceElementCounts);
 
