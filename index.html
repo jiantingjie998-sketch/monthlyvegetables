@@ -1023,7 +1023,7 @@
         </div>
         <div class="summary-section">
             <div class="summary-header">
-                <h3>攝取品項</h3>
+                <h3>攝取蔬菜</h3>
             </div>
             <div class="charts-content">
                 <div style="width: 100%;">
@@ -1342,6 +1342,7 @@ document.addEventListener('DOMContentLoaded', function() {
             { name: '白米飯', image: 'https://i.postimg.cc/NG34hs85/image.png', nutrients: '碳水化合物' },
             { name: '糙米飯', image: 'https://i.postimg.cc/R0QQ06kp/image.png', nutrients: '錳, 硒, 鎂, 維生素B3, 維生素B1' },
             { name: '紫米飯', image: 'https://i.postimg.cc/bwn9KF3h/image.png', nutrients: '花青素, 鐵, 維生素E, 膳食纖維, 鎂' },
+            { name: '麵食', image: 'https://i.postimg.cc/pdtJxY6n/image.png', nutrients: '待補充' },
             { name: '地瓜', image: 'https://i.postimg.cc/Fs5MD7ym/image.png', nutrients: '維生素A, 維生素C, 維生素B6, 維生素B5, 維生素B1' },
             { name: '南瓜', image: 'https://i.postimg.cc/PPjnYGrk/pumpkin.png', nutrients: '維生素A, 維生素C, 維生素E, 維生素B2, 維生素B6' },
             { name: '馬鈴薯', image: 'https://i.postimg.cc/rKwXQ1Wh/potato.png', nutrients: '維生素C, 維生素B6, 鉀, 錳, 葉酸' },
@@ -1349,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', function() {
             { name: '山藥', image: 'https://i.postimg.cc/rKNX9hKR/yam.png', nutrients: '鉀, 錳, 維生素C, 維生素B6, 膳食纖維' },
             { name: '日本山藥', image: 'https://i.postimg.cc/YStHvkcH/image.png', nutrients: '鉀, 錳, 維生素C, 維生素B1, 膳食纖維' },
             { name: '蓮藕', image: 'https://i.postimg.cc/PxsTdZtS/image.png', nutrients: '維生素C, 維生素B6, 維生素B1, 維生素B5, 葉酸' },
-            { name: '麵食', image: 'https://i.postimg.cc/pdtJxY6n/image.png', nutrients: '待補充' },
+            { name: '玉米', image: 'https://i.postimg.cc/ZRdnc4qM/image.png', nutrients: '葉黃素, 玉米黃素, 維生素B1, 維生素B5, 葉酸' },
             { name: '西點麵包', image: 'https://i.postimg.cc/CKcRN51d/image.png', nutrients: '待補充' }
         ],
         '蛋白質': [
@@ -1479,8 +1480,8 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     const categoryOrder = ['醣類', '蛋白質', '葉菜', '瓜果根莖', '菌菇', '油脂堅果', '辛香料'];
-    const dataVersion = '7.39'; // 資料版本控制 (更新圖片)
-    const itemsToRemoveInMigration = ['豆類', '綠豆', '紅豆', '花生', '紫米飯', '糙米飯', '玉米', '麵包', '餅乾', '糖果']; // 在資料合併時要移除的舊品項
+    const dataVersion = '7.42'; // 資料版本控制 (調整品項順序)
+    const itemsToRemoveInMigration = ['豆類', '綠豆', '紅豆', '花生', '麵包', '餅乾', '糖果', '糙米', '紫米']; // 在資料合併時要移除的舊品項
 
     const categoryColorVars = {
         '醣類': '--carbs-color',
@@ -3342,33 +3343,42 @@ document.addEventListener('DOMContentLoaded', function() {
         const computedStyle = getComputedStyle(document.documentElement);
         const datesInRange = getDatesInRange(startDateStr, endDateStr);
 
-        // 計算選定日期範圍內的品項數量
-        const itemCounts = {};
+        // 1. 計算所有品項的攝取次數
+        const allItemCounts = {};
         datesInRange.forEach(dateStr => {
             const dailyEatenItems = eatenState[dateStr]?.items || {};
             Object.keys(dailyEatenItems).forEach(vegName => {
                 if (dailyEatenItems[vegName]) {
-                    itemCounts[vegName] = (itemCounts[vegName] || 0) + 1;
+                    allItemCounts[vegName] = (allItemCounts[vegName] || 0) + 1;
                 }
             });
         });
 
-        const hasItemData = Object.keys(itemCounts).length > 0;
+        // 2. 建立品項到分類的對應，並過濾出需要的品項
+        const vegNameToCategoryMap = {};
+        Object.keys(vegetables).forEach(category => {
+            vegetables[category].forEach(veg => {
+                vegNameToCategoryMap[veg.name] = category;
+            });
+        });
+
+        const excludedCategories = ['醣類', '蛋白質'];
+        const filteredItemCounts = {};
+        Object.keys(allItemCounts).forEach(name => {
+            const category = vegNameToCategoryMap[name];
+            if (category && !excludedCategories.includes(category)) {
+                filteredItemCounts[name] = allItemCounts[name];
+            }
+        });
+
+        const hasFilteredData = Object.keys(filteredItemCounts).length > 0;
         const paginationContainer = document.getElementById('home-treemap-pagination');
         paginationContainer.innerHTML = '';
         
-        // 將標題元素選擇器移至前方，以便在各種情況下都能更新
         const homeTreemapTitle = document.querySelector('#home-screen .summary-section h3');
 
-        if (hasItemData) {
-            const vegNameToCategoryMap = {};
-            Object.keys(vegetables).forEach(category => {
-                vegetables[category].forEach(veg => {
-                    vegNameToCategoryMap[veg.name] = category;
-                });
-            });
-
-            let treemapData = Object.entries(itemCounts).map(([name, count]) => ({
+        if (hasFilteredData) {
+            let treemapData = Object.entries(filteredItemCounts).map(([name, count]) => ({
                 name: name,
                 count: count,
                 category: vegNameToCategoryMap[name] || '其他'
@@ -3505,14 +3515,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // 更新首頁的攝取品項標題，顯示品項總數和總次數
-            const uniqueItemsCount = Object.keys(itemCounts).length;
-            const totalCount = Object.values(itemCounts).reduce((sum, count) => sum + count, 0);
-            homeTreemapTitle.innerHTML = `攝取品項 <span class="unique-count">${uniqueItemsCount}種/${totalCount}次</span>`;
+            // 更新首頁的攝取蔬菜標題，顯示過濾後的品項總數和總次數
+            const uniqueItemsCount = Object.keys(filteredItemCounts).length;
+            const totalCount = Object.values(filteredItemCounts).reduce((sum, count) => sum + count, 0);
+            homeTreemapTitle.innerHTML = `攝取蔬菜 <span class="unique-count">${uniqueItemsCount}種/${totalCount}次</span>`;
         } else {
             const placeholderColor = computedStyle.getPropertyValue('--placeholder-bg').trim() || '#eaeaea';
             
-            homeTreemapTitle.innerHTML = `攝取品項 <span class="unique-count">0種/0次</span>`;
+            homeTreemapTitle.innerHTML = `攝取蔬菜 <span class="unique-count">0種/0次</span>`;
             if (window.homeTreemap) window.homeTreemap.destroy();
             window.homeTreemap = new Chart(ctx, {
                 type: 'treemap',
