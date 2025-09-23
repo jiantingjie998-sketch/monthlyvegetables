@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -23,8 +24,6 @@
             --btn-manage-bg: #6a828f; /* 管理按鈕藍灰 */
             --btn-cancel-bg: #a0a0a0; /* 取消按鈕灰 */
             --placeholder-bg: #eaeaea;
-            --carbs-color: #e6a371; /* 醣類 - 暖橘色 */
-            --protein-color: #a1928a; /* 蛋白質 - 灰褐色 */
 
             /* Category Colors (Updated for elegance) */
             --leafy-color: #4f7553;      /* 葉菜 - 自然綠 */
@@ -263,8 +262,6 @@
             border-top-left-radius: 10px; /* 配合父元素的圓角 */
             border-top-right-radius: 10px; /* 配合父元素的圓角 */
             background-color: #ffffff; /* 將底色改為白色 */
-            padding: 0.5rem; /* 新增：增加圖片周圍的內邊距 */
-            box-sizing: border-box; /* 新增：確保內邊距被包含在容器尺寸內 */
         }
         .veg-image { 
             width: 100%; 
@@ -1023,7 +1020,7 @@
         </div>
         <div class="summary-section">
             <div class="summary-header">
-                <h3>攝取蔬菜</h3>
+                <h3>攝取品項</h3>
             </div>
             <div class="charts-content">
                 <div style="width: 100%;">
@@ -1034,7 +1031,7 @@
         </div>
         <div id="recommendation-section" class="category-section">
             <div class="summary-header">
-                <h3>建議攝取 <span class="recommendation-subtitle">30天內未攝取植蔬</span></h3>
+                <h3>建議攝取 <span class="recommendation-subtitle">30天內未攝取</span></h3>
             </div>
             <div id="recommendation-grid" class="vegetable-grid">
                 <!-- Recommended vegetables will be injected here -->
@@ -1063,7 +1060,7 @@
 
         <div id="daily-summary-section" class="summary-section">
             <div class="summary-header">
-                <h3>攝取 <span id="summary-count">0</span> 種品項</h3>
+                <h3>攝取 <span id="summary-count">0</span> 種蔬菜</h3>
                 <div class="summary-actions">
                     <button id="camera-btn" class="btn btn-icon btn-select" title="拍照辨識">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></svg>
@@ -1131,7 +1128,7 @@
             <h3>管理選項</h3>
             <p class="modal-description">您的資料儲存在目前使用的瀏覽器中。若要在不同瀏覽器或裝置間同步，請先「下載備份」，再到另一台裝置「上傳備份」。<br><br><b>提示：</b>若備份檔包含大量照片，上傳時可能因記憶體限制而失敗。建議定期清理不需要的照片紀錄。</p>
             <div class="management-actions">
-                <button id="manage-add-veg-btn" class="btn">新增品項</button>
+                <button id="manage-add-veg-btn" class="btn">新增蔬菜</button>
                 <label for="import-file-input" id="manage-import-btn" class="btn">上傳備份</label>
                 <button id="manage-download-btn" class="btn">下載備份</button>
             </div>
@@ -1338,31 +1335,6 @@ document.addEventListener('DOMContentLoaded', function() {
     Chart.register(doughnutTextPlugin, barChartTextPlugin);
 
         const defaultVegetables = {
-        '醣類': [
-            { name: '白米飯', image: 'https://i.postimg.cc/NG34hs85/image.png', nutrients: '碳水化合物' },
-            { name: '糙米飯', image: 'https://i.postimg.cc/R0QQ06kp/image.png', nutrients: '錳, 硒, 鎂, 維生素B3, 維生素B1' },
-            { name: '紫米飯', image: 'https://i.postimg.cc/bwn9KF3h/image.png', nutrients: '花青素, 鐵, 維生素E, 膳食纖維, 鎂' },
-            { name: '麵食', image: 'https://i.postimg.cc/pdtJxY6n/image.png', nutrients: '待補充' },
-            { name: '地瓜', image: 'https://i.postimg.cc/Fs5MD7ym/image.png', nutrients: '維生素A, 維生素C, 維生素B6, 維生素B5, 維生素B1' },
-            { name: '南瓜', image: 'https://i.postimg.cc/PPjnYGrk/pumpkin.png', nutrients: '維生素A, 維生素C, 維生素E, 維生素B2, 維生素B6' },
-            { name: '馬鈴薯', image: 'https://i.postimg.cc/rKwXQ1Wh/potato.png', nutrients: '維生素C, 維生素B6, 鉀, 錳, 葉酸' },
-            { name: '芋頭', image: 'https://i.postimg.cc/PrWBcTyD/image.png', nutrients: '鉀, 維生素C, 維生素E, 維生素B6, 錳' },
-            { name: '山藥', image: 'https://i.postimg.cc/rKNX9hKR/yam.png', nutrients: '鉀, 錳, 維生素C, 維生素B6, 膳食纖維' },
-            { name: '日本山藥', image: 'https://i.postimg.cc/YStHvkcH/image.png', nutrients: '鉀, 錳, 維生素C, 維生素B1, 膳食纖維' },
-            { name: '蓮藕', image: 'https://i.postimg.cc/PxsTdZtS/image.png', nutrients: '維生素C, 維生素B6, 維生素B1, 維生素B5, 葉酸' },
-            { name: '玉米', image: 'https://i.postimg.cc/ZRdnc4qM/image.png', nutrients: '葉黃素, 玉米黃素, 維生素B1, 維生素B5, 葉酸' },
-            { name: '西點麵包', image: 'https://i.postimg.cc/CKcRN51d/image.png', nutrients: '待補充' }
-        ],
-        '蛋白質': [
-            { name: '蛋', image: 'https://i.postimg.cc/25kqhhCP/image.png', nutrients: '優質蛋白質' },
-            { name: '雞肉', image: 'https://i.postimg.cc/1t365Wc4/image.png', nutrients: '優質蛋白質' },
-            { name: '豬肉', image: 'https://i.postimg.cc/PqhY0fCW/image.png', nutrients: '優質蛋白質, 維生素B1' },
-            { name: '牛肉', image: 'https://i.postimg.cc/7LV04vzp/image.png', nutrients: '優質蛋白質, 鐵, 鋅' },
-            { name: '魚肉', image: 'https://i.postimg.cc/mkq7nQ9k/image.png', nutrients: '優質蛋白質, Omega-3' },
-            { name: '海鮮', image: 'https://i.postimg.cc/KYFr11KW/image.png', nutrients: '優質蛋白質, 鋅' },
-            { name: '黃豆', image: 'https://i.postimg.cc/bwwv5QJb/image.png', nutrients: '植物性蛋白質, 鐵, 錳, 磷, 維生素K' },
-            { name: '黑豆', image: 'https://i.postimg.cc/Pf1NvX9L/image.png', nutrients: '植物性蛋白質, 大豆異黃酮, 膳食纖維, 花青素' }
-        ],
         '葉菜': [
             { name: '地瓜葉', image: 'https://i.postimg.cc/Qx48ccLm/2.png', nutrients: '維生素A, 維生素C, 維生素E, 維生素K, 維生素B6' },
             { name: '空心菜', image: 'https://i.postimg.cc/NjRMYN82/image.png', nutrients: '維生素C, 維生素A, 維生素B2, 葉酸, 維生素B3' },
@@ -1389,7 +1361,7 @@ document.addEventListener('DOMContentLoaded', function() {
             { name: '香菜', image: 'https://i.postimg.cc/KvqbRCGk/image.png', nutrients: '維生素K, 維生素A, 維生素C, 葉酸, 維生素B6' },
             { name: '蒜苗', image: 'https://i.postimg.cc/c1gWFpP7/image.png', nutrients: '維生素C, 維生素A, 維生素K, 維生素B6, 葉酸' },
             { name: '其他葉菜', image: 'https://i.postimg.cc/44HCWN8v/image.png', nutrients: '多種維生素, 礦物質' },
-            { name: '各種生菜', image: 'https://i.postimg.cc/907v0J4g/image.png', nutrients: '維生素A, 維生素K, 葉酸' }
+            { name: '各種生菜', image: 'https://i.postimg.cc/907v0J4g/image.png', nutrients: '維生素A, 維生素K, 葉酸' },
         ],
         '辛香料': [
             { name: '蔥', image: 'https://i.postimg.cc/RhXPpQ3q/image.png', nutrients: '維生素K, 維生素C, 維生素A, 維生素B6, 葉酸' },
@@ -1400,7 +1372,24 @@ document.addEventListener('DOMContentLoaded', function() {
             { name: '紅辣椒', image: 'https://i.postimg.cc/sMHLnbyx/chili.png', nutrients: '辣椒素, 維生素C, 維生素A, 維生素B6, 鉀' },
         ],
         '根莖穀豆': [
-            { name: '芝麻', image: 'https://i.postimg.cc/gJTjyrdR/image.png', nutrients: '鈣, 鐵, 鎂, 鋅, 維生素E' }
+            { name: '白蘿蔔', image: 'https://i.postimg.cc/gr3fYMyt/daikon.png', nutrients: '維生素C, 葉酸, 維生素B6, 維生素B5, 維生素B1' },
+            { name: '胡蘿蔔', image: 'https://i.postimg.cc/QdfFNfP0/image.png', nutrients: '維生素A, 維生素K, 維生素B6, 維生素C, 維生素B1' },
+            { name: '地瓜', image: 'https://i.postimg.cc/Fs5MD7ym/image.png', nutrients: '維生素A, 維生素C, 維生素B6, 維生素B5, 維生素B1' },
+            { name: '南瓜', image: 'https://i.postimg.cc/PPjnYGrk/pumpkin.png', nutrients: '維生素A, 維生素C, 維生素E, 維生素B2, 維生素B6' },
+            { name: '馬鈴薯', image: 'https://i.postimg.cc/rKwXQ1Wh/potato.png', nutrients: '維生素C, 維生素B6, 鉀, 錳, 葉酸' },
+            { name: '芋頭', image: 'https://i.postimg.cc/PrWBcTyD/image.png', nutrients: '鉀, 維生素C, 維生素E, 維生素B6, 錳' },
+            { name: '山藥', image: 'https://i.postimg.cc/rKNX9hKR/yam.png', nutrients: '鉀, 錳, 維生素C, 維生素B6, 膳食纖維' },
+            { name: '日本山藥', image: 'https://i.postimg.cc/YStHvkcH/image.png', nutrients: '鉀, 錳, 維生素C, 維生素B1, 膳食纖維' },
+            { name: '海帶', image: 'https://i.postimg.cc/DzpVg6gY/image.png', nutrients: '碘, 維生素K, 葉酸, 鎂, 鈣' },
+            { name: '蓮藕', image: 'https://i.postimg.cc/PxsTdZtS/image.png', nutrients: '維生素C, 維生素B6, 維生素B1, 維生素B5, 葉酸' },
+            { name: '玉米筍', image: 'https://i.postimg.cc/2yvPCDfP/image.png', nutrients: '維生素C, 維生素A, 葉酸, 鐵, 鉀' },
+            { name: '玉米', image: 'https://i.postimg.cc/ZRdnc4qM/image.png', nutrients: '葉黃素, 玉米黃素, 維生素B1, 維生素B5, 葉酸' },
+            { name: '紫米', image: 'https://i.postimg.cc/yd2MqN2m/image.png', nutrients: '花青素, 鐵, 維生素E, 膳食纖維, 鎂' },
+            { name: '糙米', image: 'https://i.postimg.cc/qRNPZKDB/image.png', nutrients: '錳, 硒, 鎂, 維生素B3, 維生素B1' },
+            { name: '芝麻', image: 'https://i.postimg.cc/gJTjyrdR/image.png', nutrients: '鈣, 鐵, 鎂, 鋅, 維生素E' },
+            { name: '黃豆', image: 'https://i.postimg.cc/bwwv5QJb/image.png', nutrients: '蛋白質, 鐵, 錳, 磷, 維生素K' },
+            { name: '牛蒡', image: 'https://i.postimg.cc/02HxXhJG/image.png', nutrients: '膳食纖維, 鉀, 鎂, 菊糖, 多酚' },
+            { name: '黑豆', image: 'https://i.postimg.cc/Pf1NvX9L/image.png', nutrients: '蛋白質, 大豆異黃酮, 膳食纖維, 花青素, 維生素A, 維生素E' }
         ],
         '瓜果莖': [
             { name: '白花椰', image: 'https://i.postimg.cc/JhBRwKWy/image.png', nutrients: '維生素C, 維生素K, 維生素B6, 葉酸, 維生素B5' },
@@ -1425,47 +1414,7 @@ document.addEventListener('DOMContentLoaded', function() {
             { name: '豆芽菜', image: 'https://i.postimg.cc/XYPnDmtS/image.png', nutrients: '維生素C, 維生素K, 葉酸, 維生素B1, 維生素B2' },
             { name: '竹筍', image: 'https://i.postimg.cc/fW0zHpSQ/image.png', nutrients: '膳食纖維, 鉀, 維生素B1, 維生素B6, 維生素C' },
             { name: '筊白筍', image: 'https://i.postimg.cc/Dz7SntBW/image.png', nutrients: '鉀, 葉酸, 維生素C, 維生素B1, 維生素B6' },
-            { name: '蘆筍', image: 'https://i.postimg.cc/P5hBfbdK/image.png', nutrients: '葉酸, 維生素K, 維生素B1, 維生素B2, 維生素C' },
-            { name: '白蘿蔔', image: 'https://i.postimg.cc/gr3fYMyt/daikon.png', nutrients: '維生素C, 葉酸, 維生素B6, 維生素B5, 維生素B1' },
-            { name: '胡蘿蔔', image: 'https://i.postimg.cc/R0QQ06kp/image.png', nutrients: '維生素A, 維生素K, 維生素B6, 維生素C, 維生素B1' },
-            { name: '玉米筍', image: 'https://i.postimg.cc/2yvPCDfP/image.png', nutrients: '維生素C, 維生素A, 葉酸, 鐵, 鉀' },
-            { name: '牛蒡', image: 'https://i.postimg.cc/02HxXhJG/image.png', nutrients: '膳食纖維, 鉀, 鎂, 菊糖, 多酚' },
-            { name: '海帶', image: 'https://i.postimg.cc/DzpVg6gY/image.png', nutrients: '碘, 維生素K, 葉酸, 鎂, 鈣' },
-        ],
-        '油脂堅果': [
-            { name: '芝麻', image: 'https://i.postimg.cc/gJTjyrdR/image.png', nutrients: '鈣, 鐵, 鎂, 鋅, 維生素E' },
-            { name: '核桃', image: 'https://i.postimg.cc/wjDDWRjx/image.png', nutrients: '待補充' },
-            { name: '其他堅果', image: 'https://i.postimg.cc/BQYdcG5N/image.png', nutrients: '待補充' }
-        ],
-        '瓜果根莖': [
-            { name: '白花椰', image: 'https://i.postimg.cc/JhBRwKWy/image.png', nutrients: '維生素C, 維生素K, 維生素B6, 葉酸, 維生素B5' },
-            { name: '青花菜', image: 'https://i.postimg.cc/hQSWFxYt/broccoli.png', nutrients: '維生素C, 維生素K, 維生素A, 維生素B6, 葉酸' },
-            { name: '番茄', image: 'https://i.postimg.cc/PPShj3Ts/tomato.png', nutrients: '茄紅素, 維生素C, 維生素A, 維生素K, 鉀' },
-            { name: '茄子', image: 'https://i.postimg.cc/CKZxhSbx/image.png', nutrients: '花青素, 膳食纖維, 錳, 維生素K, 維生素B6' },
-            { name: '糯米椒', image: 'https://i.postimg.cc/TK3SJfzB/shishito-pepper.png', nutrients: '維生素C, 維生素A, 維生素B6, 維生素K, 維生素B1' },
-            { name: '青椒', image: 'https://i.postimg.cc/8cf5ZDPY/image.png', nutrients: '維生素C, 維生素A, 維生素B6, 維生素K, 葉酸' },
-            { name: '甜椒', image: 'https://i.postimg.cc/zHY6CWNk/bell-pepper.png', nutrients: '維生素C, 維生素A, 維生素B6, 葉酸, 維生素K' },
-            { name: '大黃瓜', image: 'https://i.postimg.cc/9fQ5ZKG7/image.png', nutrients: '維生素K, 維生素C, 鉀, 鎂, 錳' },
-            { name: '小黃瓜', image: 'https://i.postimg.cc/pLZM9Rnv/image.png', nutrients: '維生素K, 維生素C, 維生素B5, 維生素A, 維生素B1' },
-            { name: '櫛瓜', image: 'https://i.postimg.cc/Hr6qqV0p/zucchini.png', nutrients: '維生素C, 維生素A, 維生素B6, 葉酸, 維生素K' },
-            { name: '蒲瓜', image: 'https://i.postimg.cc/K8FyvRjQ/image.png', nutrients: '維生素C, 維生素B3, 維生素B6, 鈣, 鐵' },
-            { name: '絲瓜', image: 'https://i.postimg.cc/qBNXP3NP/2.png', nutrients: '維生素C, 維生素B6, 維生素B5, 維生素B1, 葉酸' },
-            { name: '苦瓜', image: 'https://i.postimg.cc/Y07rzFZv/image.png', nutrients: '苦瓜苷, 維生素C, 維生素A, 葉酸, 鉀' },
-            { name: '冬瓜', image: 'https://i.postimg.cc/6QHnSW-t6/image.png', nutrients: '維生素C, 維生素B1, 維生素B3, 維生素B5, 維生素B6' },
-            { name: '四季豆', image: 'https://i.postimg.cc/Y9sKY4Lg/image.png', nutrients: '維生素K, 維生素C, 維生素A, 葉酸, 維生素B1' },
-            { name: '菜豆', image: 'https://i.postimg.cc/MTSCdPCq/image.png', nutrients: '維生素K, 維生素C, 葉酸, 維生素A, 維生素B6' },
-            { name: '荷蘭豆', image: 'https://i.postimg.cc/brRzCJf3/image.png', nutrients: '維生素K, 維生素C, 維生素B1, 維生素A, 葉酸' },
-            { name: '毛豆', image: 'https://i.postimg.cc/PLNgTTK1/edamame.png', nutrients: '蛋白質, 葉酸, 鐵, 錳, 維生素K' },
-            { name: '秋葵', image: 'https://i.postimg.cc/kBczSBpx/okra.png', nutrients: '維生素K, 維生素C, 葉酸, 維生素B6, 維生素A' },
-            { name: '豆芽菜', image: 'https://i.postimg.cc/XYPnDmtS/image.png', nutrients: '維生素C, 維生素K, 葉酸, 維生素B1, 維生素B2' },
-            { name: '竹筍', image: 'https://i.postimg.cc/fW0zHpSQ/image.png', nutrients: '膳食纖維, 鉀, 維生素B1, 維生素B6, 維生素C' },
-            { name: '筊白筍', image: 'https://i.postimg.cc/Dz7SntBW/image.png', nutrients: '鉀, 葉酸, 維生素C, 維生素B1, 維生素B6' },
-            { name: '蘆筍', image: 'https://i.postimg.cc/P5hBfbdK/image.png', nutrients: '葉酸, 維生素K, 維生素B1, 維生素B2, 維生素C' },
-            { name: '白蘿蔔', image: 'https://i.postimg.cc/gr3fYMyt/daikon.png', nutrients: '維生素C, 葉酸, 維生素B6, 維生素B5, 維生素B1' },
-            { name: '胡蘿蔔', image: 'https://i.postimg.cc/QdfFNfP0/image.png', nutrients: '維生素A, 維生素K, 維生素B6, 維生素C, 維生素B1' },
-            { name: '玉米筍', image: 'https://i.postimg.cc/2yvPCDfP/image.png', nutrients: '維生素C, 維生素A, 葉酸, 鐵, 鉀' },
-            { name: '牛蒡', image: 'https://i.postimg.cc/02HxXhJG/image.png', nutrients: '膳食纖維, 鉀, 鎂, 菊糖, 多酚' },
-            { name: '海帶', image: 'https://i.postimg.cc/DzpVg6gY/image.png', nutrients: '碘, 維生素K, 葉酸, 鎂, 鈣' },
+            { name: '蘆筍', image: 'https://i.postimg.cc/P5hBfbdK/image.png', nutrients: '葉酸, 維生素K, 維生素B1, 維生素B2, 維生素C' }
         ],
         '菌菇': [
             { name: '乾香菇', image: 'https://i.postimg.cc/HL3C5KH7/image.png', nutrients: '維生素D, 維生素B2, 維生素B3, 維生素B5, 維生素B6' },
@@ -1479,18 +1428,16 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     };
 
-    const categoryOrder = ['醣類', '蛋白質', '葉菜', '瓜果根莖', '菌菇', '油脂堅果', '辛香料'];
-    const dataVersion = '7.42'; // 資料版本控制 (調整品項順序)
-    const itemsToRemoveInMigration = ['豆類', '綠豆', '紅豆', '花生', '麵包', '餅乾', '糖果', '糙米', '紫米']; // 在資料合併時要移除的舊品項
+    const categoryOrder = ['葉菜', '瓜果莖', '菌菇', '根莖穀豆', '辛香料'];
+    const dataVersion = '7.15'; // 資料版本控制 (營養素更新)
+    const itemsToRemoveInMigration = ['豆類', '綠豆', '紅豆', '花生']; // 在資料合併時要移除的舊品項
 
     const categoryColorVars = {
-        '醣類': '--carbs-color',
-        '蛋白質': '--protein-color',
         '葉菜': '--leafy-color',
-        '瓜果根莖': '--gourd-bean-color',
-        '菌菇': '--mushroom-color',
-        '油脂堅果': '--root-color',
         '辛香料': '--spice-color',
+        '根莖穀豆': '--root-color',
+        '瓜果莖': '--gourd-bean-color',
+        '菌菇': '--mushroom-color'
     };
 
     let vegetables = {};
@@ -1687,39 +1634,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     eatenStateModified = true;
                 }
             });
-            // 處理更名: 糙米 -> 糙米飯, 紫米 -> 紫米飯
-            Object.keys(storedEatenState).forEach(date => {
-                if (storedEatenState[date]?.['糙米']) {
-                    storedEatenState[date]['糙米飯'] = storedEatenState[date]['糙米'];
-                    delete storedEatenState[date]['糙米'];
-                    eatenStateModified = true;
-                }
-                if (storedEatenState[date]?.['紫米']) {
-                    storedEatenState[date]['紫米飯'] = storedEatenState[date]['紫米'];
-                    delete storedEatenState[date]['紫米'];
-                    eatenStateModified = true;
-                }
-            });
-            // 處理更名: 麵包 -> 西點麵包
-            Object.keys(storedEatenState).forEach(date => {
-                if (storedEatenState[date]?.['麵包']) {
-                    storedEatenState[date]['西點麵包'] = storedEatenState[date]['麵包'];
-                    delete storedEatenState[date]['麵包'];
-                    eatenStateModified = true;
-                }
-            });
-            // 處理更名: 麵包 -> 西點麵包
-            Object.keys(storedEatenState).forEach(date => {
-                const dailyItems = storedEatenState[date]?.items;
-                if (dailyItems && dailyItems['麵包']) {
-                    dailyItems['西點麵包'] = dailyItems['麵包'];
-                    delete dailyItems['麵包'];
-                    eatenStateModified = true;
-                }
-            });
-
             // 如果有變動，儲存清理後的攝取紀錄
-            if (eatenStateModified) await safeSetItem('eatenVeggiesDaily', storedEatenState);
+            if (eatenStateModified) safeSetItem('eatenVeggiesDaily', JSON.stringify(storedEatenState));
         }
 
         // --- 資料結構遷移：將舊格式的 eatenState 轉換為新格式 ---
@@ -1741,16 +1657,9 @@ document.addEventListener('DOMContentLoaded', function() {
         categoryCollapseState = await safeGetItem('categoryCollapseState') || {};
         
         // Migrate collapse state if a migration occurred (e.g., category rename)
-        if (migrationOccurred) {
-            if (categoryCollapseState['瓜果莖'] !== undefined) {
-                categoryCollapseState['瓜果根莖'] = categoryCollapseState['瓜果莖'];
-                delete categoryCollapseState['瓜果莖'];
-            }
-            if (categoryCollapseState['根莖穀豆'] !== undefined) {
-                categoryCollapseState['油脂堅果'] = categoryCollapseState['根莖穀豆'];
-                delete categoryCollapseState['根莖穀豆'];
-            }
-            // Persist the changes
+        if (migrationOccurred && categoryCollapseState['瓜果'] !== undefined) {
+            categoryCollapseState['瓜果莖'] = categoryCollapseState['瓜果'];
+            delete categoryCollapseState['瓜果'];
             await safeSetItem('categoryCollapseState', categoryCollapseState); // Persist the change
         }
 
@@ -1930,15 +1839,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isMultiDay) {
             // 多日模式
             const dayCount = datesInRange.length;
-            titleText = `${dayCount}天攝取 <span id="summary-count">${eatenList.length}</span> 種品項`;
+            titleText = `${dayCount}天攝取 <span id="summary-count">${eatenList.length}</span> 種蔬菜`;
         } else {
             // 單日模式
             if (startDate === today) {
-                titleText = `今日攝取 <span id="summary-count">${eatenList.length}</span> 種品項`;
+                titleText = `今日攝取 <span id="summary-count">${eatenList.length}</span> 種蔬菜`;
             } else {
                 const [year, month, day] = startDate.split('-').map(Number);
                 const formattedDate = `${month}/${day}`;
-                titleText = `${formattedDate}攝取 <span id="summary-count">${eatenList.length}</span> 種品項`;
+                titleText = `${formattedDate}攝取 <span id="summary-count">${eatenList.length}</span> 種蔬菜`;
             }
         }
         summaryTitleEl.innerHTML = titleText;
@@ -2506,11 +2415,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // 3. Find all vegetables that were NOT eaten
         const recommendedVeggies = [];
         Object.keys(vegetables).forEach(category => {
-            // 根據您的要求，排除醣類與蛋白質
-            if (category === '醣類' || category === '蛋白質') {
-                return; // 跳過此分類
-            }
-
             vegetables[category].forEach(veg => {
                 if (!eatenInLast30Days.has(veg.name)) {
                     recommendedVeggies.push({ ...veg, category: category });
@@ -3343,42 +3247,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const computedStyle = getComputedStyle(document.documentElement);
         const datesInRange = getDatesInRange(startDateStr, endDateStr);
 
-        // 1. 計算所有品項的攝取次數
-        const allItemCounts = {};
+        // 計算選定日期範圍內的品項數量
+        const itemCounts = {};
         datesInRange.forEach(dateStr => {
             const dailyEatenItems = eatenState[dateStr]?.items || {};
             Object.keys(dailyEatenItems).forEach(vegName => {
                 if (dailyEatenItems[vegName]) {
-                    allItemCounts[vegName] = (allItemCounts[vegName] || 0) + 1;
+                    itemCounts[vegName] = (itemCounts[vegName] || 0) + 1;
                 }
             });
         });
 
-        // 2. 建立品項到分類的對應，並過濾出需要的品項
-        const vegNameToCategoryMap = {};
-        Object.keys(vegetables).forEach(category => {
-            vegetables[category].forEach(veg => {
-                vegNameToCategoryMap[veg.name] = category;
-            });
-        });
-
-        const excludedCategories = ['醣類', '蛋白質'];
-        const filteredItemCounts = {};
-        Object.keys(allItemCounts).forEach(name => {
-            const category = vegNameToCategoryMap[name];
-            if (category && !excludedCategories.includes(category)) {
-                filteredItemCounts[name] = allItemCounts[name];
-            }
-        });
-
-        const hasFilteredData = Object.keys(filteredItemCounts).length > 0;
+        const hasItemData = Object.keys(itemCounts).length > 0;
         const paginationContainer = document.getElementById('home-treemap-pagination');
         paginationContainer.innerHTML = '';
         
+        // 將標題元素選擇器移至前方，以便在各種情況下都能更新
         const homeTreemapTitle = document.querySelector('#home-screen .summary-section h3');
 
-        if (hasFilteredData) {
-            let treemapData = Object.entries(filteredItemCounts).map(([name, count]) => ({
+        if (hasItemData) {
+            const vegNameToCategoryMap = {};
+            Object.keys(vegetables).forEach(category => {
+                vegetables[category].forEach(veg => {
+                    vegNameToCategoryMap[veg.name] = category;
+                });
+            });
+
+            let treemapData = Object.entries(itemCounts).map(([name, count]) => ({
                 name: name,
                 count: count,
                 category: vegNameToCategoryMap[name] || '其他'
@@ -3515,14 +3410,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // 更新首頁的攝取蔬菜標題，顯示過濾後的品項總數和總次數
-            const uniqueItemsCount = Object.keys(filteredItemCounts).length;
-            const totalCount = Object.values(filteredItemCounts).reduce((sum, count) => sum + count, 0);
-            homeTreemapTitle.innerHTML = `攝取蔬菜 <span class="unique-count">${uniqueItemsCount}種/${totalCount}次</span>`;
+            // 更新首頁的攝取品項標題，顯示品項總數和總次數
+            const uniqueItemsCount = Object.keys(itemCounts).length;
+            const totalCount = Object.values(itemCounts).reduce((sum, count) => sum + count, 0);
+            homeTreemapTitle.innerHTML = `攝取品項 <span class="unique-count">${uniqueItemsCount}種/${totalCount}次</span>`;
         } else {
             const placeholderColor = computedStyle.getPropertyValue('--placeholder-bg').trim() || '#eaeaea';
             
-            homeTreemapTitle.innerHTML = `攝取蔬菜 <span class="unique-count">0種/0次</span>`;
+            homeTreemapTitle.innerHTML = `攝取品項 <span class="unique-count">0種/0次</span>`;
             if (window.homeTreemap) window.homeTreemap.destroy();
             window.homeTreemap = new Chart(ctx, {
                 type: 'treemap',
