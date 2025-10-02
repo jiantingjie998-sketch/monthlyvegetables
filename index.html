@@ -1819,14 +1819,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const isMultiDay = startDate !== endDate;
         const datesInRange = getDatesInRange(startDate, endDate);
         const aggregatedEatenSet = new Set();
-        const itemServingCounts = {}; // 用於圖表1：計算每個品項的攝取次數
+        const itemServingCounts = {}; // 計算每個品項的攝取次數
+
+        // 建立一個包含所有合法蔬菜名稱的 Set，以便快速查找
+        const allValidVeggieNames = new Set();
+        Object.values(vegetables).forEach(veggieList => {
+            veggieList.forEach(veg => allValidVeggieNames.add(veg.name));
+        });
 
         datesInRange.forEach(dateStr => {
             const dailyEatenItems = eatenState[dateStr]?.items || {};
             Object.keys(dailyEatenItems).forEach(vegName => {
-                if (dailyEatenItems[vegName]) {
+                // 關鍵修正：只處理存在於預設蔬菜清單中的品項
+                if (dailyEatenItems[vegName] && allValidVeggieNames.has(vegName)) {
                     aggregatedEatenSet.add(vegName);
-                    itemServingCounts[vegName] = (itemServingCounts[vegName] || 0) + 1;
+                    itemServingCounts[vegName] = (itemServingCounts[vegName] || 0) + 1; // 這個變數目前未使用，但保留以備未來擴充
                 }
             });
         });
@@ -1981,14 +1988,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const allCategoriesInRange = new Set();
 
             datesInRange.forEach(dateStr => {
-                dailyCategoryCounts[dateStr] = {};
-                const dailyEatenItems = eatenState[dateStr]?.items || {}; // 從 items 讀取
-                Object.keys(dailyEatenItems).forEach(vegName => {
-                    for (const category in vegetables) {
-                        if (vegetables[category].some(v => v.name === vegName)) {
-                            dailyCategoryCounts[dateStr][category] = (dailyCategoryCounts[dateStr][category] || 0) + 1;
-                            allCategoriesInRange.add(category);
-                            break;
+                dailyCategoryCounts[dateStr] = {}; // 初始化當天的分類計數
+                const dailyEatenItems = eatenState[dateStr]?.items || {};
+                Object.keys(dailyEatenItems).forEach(vegName => { // 遍歷當天吃過的品項
+                    // 關鍵修正：只處理存在於預設蔬菜清單中的品項
+                    if (dailyEatenItems[vegName] && allValidVeggieNames.has(vegName)) {
+                        for (const category in vegetables) {
+                            if (vegetables[category].some(v => v.name === vegName)) {
+                                dailyCategoryCounts[dateStr][category] = (dailyCategoryCounts[dateStr][category] || 0) + 1;
+                                allCategoriesInRange.add(category);
+                                break;
+                            }
                         }
                     }
                 });
@@ -2401,12 +2411,19 @@ document.addEventListener('DOMContentLoaded', function() {
             last30Days.push(d.toISOString().split('T')[0]);
         }
 
+        // 建立一個包含所有合法蔬菜名稱的 Set，以便快速查找
+        const allValidVeggieNames = new Set();
+        Object.values(vegetables).forEach(veggieList => {
+            veggieList.forEach(veg => allValidVeggieNames.add(veg.name));
+        });
+
         // 2. Collect all vegetables eaten in the last 30 days
         const eatenInLast30Days = new Set();
         last30Days.forEach(dateStr => {
             const dailyEatenItems = eatenState[dateStr]?.items || {};
             Object.keys(dailyEatenItems).forEach(vegName => { // 從 items 讀取
-                if (dailyEatenItems[vegName]) {
+                // 只將存在於預設蔬菜清單中的品項加入計算
+                if (dailyEatenItems[vegName] && allValidVeggieNames.has(vegName)) {
                     eatenInLast30Days.add(vegName);
                 }
             });
@@ -3247,12 +3264,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const computedStyle = getComputedStyle(document.documentElement);
         const datesInRange = getDatesInRange(startDateStr, endDateStr);
 
+        // 建立一個包含所有合法蔬菜名稱的 Set，以便快速查找
+        const allValidVeggieNames = new Set();
+        Object.values(vegetables).forEach(veggieList => {
+            veggieList.forEach(veg => allValidVeggieNames.add(veg.name));
+        });
+
         // 計算選定日期範圍內的品項數量
         const itemCounts = {};
         datesInRange.forEach(dateStr => {
             const dailyEatenItems = eatenState[dateStr]?.items || {};
             Object.keys(dailyEatenItems).forEach(vegName => {
-                if (dailyEatenItems[vegName]) {
+                // 只將存在於預設蔬菜清單中的品項加入計算
+                if (dailyEatenItems[vegName] && allValidVeggieNames.has(vegName)) {
                     itemCounts[vegName] = (itemCounts[vegName] || 0) + 1;
                 }
             });
