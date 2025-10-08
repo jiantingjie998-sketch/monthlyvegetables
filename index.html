@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -8,6 +7,9 @@
     <!-- Chart.js Library for Pie Chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@2.3.0/dist/chartjs-chart-treemap.min.js"></script>
+    <!-- Cropper.js for Image Editing -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
         /* --- Google Fonts --- */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
@@ -816,6 +818,44 @@
             justify-content: center; /* 按鈕置中 */
             margin-top: 0; /* 間距由上方感謝文字控制 */
         }
+        /* --- Photo Editor Modal --- */
+        #photo-editor-container {
+            width: 100%;
+            height: 40vh; /* 限制圖片容器高度 */
+            margin-bottom: 1rem;
+            background: #eee;
+        }
+        #photo-editor-image {
+            display: block;
+            max-width: 100%;
+        }
+        .editor-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .editor-actions .btn {
+            /* 移除通用按鈕樣式，改為圖示按鈕樣式 */
+            background-color: transparent;
+            border: none;
+            box-shadow: none;
+            width: 50px;
+            height: 50px;
+            padding: 0;
+            border-radius: 50%;
+            transition: background-color 0.2s ease;
+        }
+        .editor-actions .btn:hover {
+            background-color: #e9e9e9; /* 懸停時的淺灰色背景 */
+            transform: none; /* 移除通用按鈕的 hover 效果 */
+            box-shadow: none;
+        }
+        .editor-actions .btn svg {
+            width: 28px;
+            height: 28px;
+            stroke: var(--text-primary); /* 圖示顏色使用主要文字顏色 */
+        }
         #about-modal .modal-content p {
             text-align: left;
         }
@@ -1138,6 +1178,16 @@
         </div>
     </div>
 
+    <!-- 相機選擇 Modal -->
+    <div id="camera-choice-modal" class="modal">
+        <div class="modal-content">
+            <div class="management-actions">
+                <label for="upload-photo-input" id="choice-upload-btn" class="btn">從相簿選取</label>
+                <button id="choice-camera-btn" class="btn">開啟相機</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 編輯/新增 Modal -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
@@ -1211,6 +1261,25 @@
         </div>
     </div>
 
+    <!-- 照片編輯 Modal -->
+    <div id="photo-editor-modal" class="modal">
+        <div class="modal-content">
+            <h3>編輯照片</h3>
+            <div id="photo-editor-container">
+                <img id="photo-editor-image" src="">
+            </div>
+            <div class="editor-actions">
+                <button id="editor-rotate-btn" class="btn" title="旋轉">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" /></svg>
+                </button>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-cancel" data-modal="photo-editor-modal">取消</button>
+                <button type="button" id="editor-confirm-btn" class="btn btn-save">確定</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 照片刪除確認 Modal -->
     <div id="photo-delete-confirm-modal" class="modal">
         <div class="modal-content">
@@ -1241,6 +1310,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    let cropper = null;
     let cameraStream = null;
 
     // --- IndexedDB Helper ---
@@ -1462,6 +1532,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const aboutModal = document.getElementById('about-modal');
     const cameraModal = document.getElementById('camera-modal');
     const photoViewerModal = document.getElementById('photo-viewer-modal');
+    const cameraChoiceModal = document.getElementById('camera-choice-modal');
+    const photoEditorModal = document.getElementById('photo-editor-modal');
     const photoDeleteConfirmModal = document.getElementById('photo-delete-confirm-modal');
     const modalTitle = document.getElementById('modal-title');
     const editForm = document.getElementById('edit-form');
@@ -1819,21 +1891,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const isMultiDay = startDate !== endDate;
         const datesInRange = getDatesInRange(startDate, endDate);
         const aggregatedEatenSet = new Set();
-        const itemServingCounts = {}; // 計算每個品項的攝取次數
-
-        // 建立一個包含所有合法蔬菜名稱的 Set，以便快速查找
-        const allValidVeggieNames = new Set();
-        Object.values(vegetables).forEach(veggieList => {
-            veggieList.forEach(veg => allValidVeggieNames.add(veg.name));
-        });
+        const itemServingCounts = {}; // 用於圖表1：計算每個品項的攝取次數
 
         datesInRange.forEach(dateStr => {
             const dailyEatenItems = eatenState[dateStr]?.items || {};
             Object.keys(dailyEatenItems).forEach(vegName => {
-                // 關鍵修正：只處理存在於預設蔬菜清單中的品項
-                if (dailyEatenItems[vegName] && allValidVeggieNames.has(vegName)) {
+                if (dailyEatenItems[vegName]) {
                     aggregatedEatenSet.add(vegName);
-                    itemServingCounts[vegName] = (itemServingCounts[vegName] || 0) + 1; // 這個變數目前未使用，但保留以備未來擴充
+                    itemServingCounts[vegName] = (itemServingCounts[vegName] || 0) + 1;
                 }
             });
         });
@@ -1988,17 +2053,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const allCategoriesInRange = new Set();
 
             datesInRange.forEach(dateStr => {
-                dailyCategoryCounts[dateStr] = {}; // 初始化當天的分類計數
-                const dailyEatenItems = eatenState[dateStr]?.items || {};
-                Object.keys(dailyEatenItems).forEach(vegName => { // 遍歷當天吃過的品項
-                    // 關鍵修正：只處理存在於預設蔬菜清單中的品項
-                    if (dailyEatenItems[vegName] && allValidVeggieNames.has(vegName)) {
-                        for (const category in vegetables) {
-                            if (vegetables[category].some(v => v.name === vegName)) {
-                                dailyCategoryCounts[dateStr][category] = (dailyCategoryCounts[dateStr][category] || 0) + 1;
-                                allCategoriesInRange.add(category);
-                                break;
-                            }
+                dailyCategoryCounts[dateStr] = {};
+                const dailyEatenItems = eatenState[dateStr]?.items || {}; // 從 items 讀取
+                Object.keys(dailyEatenItems).forEach(vegName => {
+                    for (const category in vegetables) {
+                        if (vegetables[category].some(v => v.name === vegName)) {
+                            dailyCategoryCounts[dateStr][category] = (dailyCategoryCounts[dateStr][category] || 0) + 1;
+                            allCategoriesInRange.add(category);
+                            break;
                         }
                     }
                 });
@@ -2411,19 +2473,12 @@ document.addEventListener('DOMContentLoaded', function() {
             last30Days.push(d.toISOString().split('T')[0]);
         }
 
-        // 建立一個包含所有合法蔬菜名稱的 Set，以便快速查找
-        const allValidVeggieNames = new Set();
-        Object.values(vegetables).forEach(veggieList => {
-            veggieList.forEach(veg => allValidVeggieNames.add(veg.name));
-        });
-
         // 2. Collect all vegetables eaten in the last 30 days
         const eatenInLast30Days = new Set();
         last30Days.forEach(dateStr => {
             const dailyEatenItems = eatenState[dateStr]?.items || {};
             Object.keys(dailyEatenItems).forEach(vegName => { // 從 items 讀取
-                // 只將存在於預設蔬菜清單中的品項加入計算
-                if (dailyEatenItems[vegName] && allValidVeggieNames.has(vegName)) {
+                if (dailyEatenItems[vegName]) {
                     eatenInLast30Days.add(vegName);
                 }
             });
@@ -2644,6 +2699,50 @@ document.addEventListener('DOMContentLoaded', function() {
         closeModal(editModal);
     }
     
+    // --- 照片編輯功能 ---
+    function openPhotoEditor(imageFile) {
+        const image = document.getElementById('photo-editor-image');
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            image.src = e.target.result;
+            photoEditorModal.style.display = 'flex';
+
+            if (cropper) {
+                cropper.destroy();
+            }
+            cropper = new Cropper(image, {
+                aspectRatio: NaN, // 自由裁剪
+                viewMode: 1,
+                background: false,
+                autoCropArea: 0.8,
+            });
+        };
+        reader.readAsDataURL(imageFile);
+    }
+
+    document.getElementById('editor-rotate-btn').addEventListener('click', () => {
+        if (cropper) {
+            cropper.rotate(90);
+        }
+    });
+
+    document.getElementById('editor-confirm-btn').addEventListener('click', () => {
+        if (!cropper) return;
+
+        cropper.getCroppedCanvas({
+            maxWidth: 800, // 限制最大寬度
+            fillColor: '#fff',
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        }).toBlob(async (blob) => {
+            await processAndSaveImages([blob]);
+            closeModal(photoEditorModal);
+            if (cropper) cropper.destroy();
+            cropper = null;
+        }, 'image/jpeg', 0.8); // 壓縮品質
+    });
+
     // --- Blob <-> Base64 轉換輔助函式 ---
     function blobToBase64(blob) {
         return new Promise((resolve, reject) => {
@@ -2953,24 +3052,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- 照片上傳功能 ---
-    uploadPhotoInput.addEventListener('change', async (event) => {
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
-
-        if (files.length > 5) {
-            alert('一次最多只能上傳 5 張照片。');
-            event.target.value = ''; // 重置 input
-            return;
-        }
-
-        stopCamera(); // 選擇照片後，關閉相機
-
-        const compressionPromises = Array.from(files).map(file => compressImage(file, 0.7, 800, 'blob'));
-
+    // --- 處理單張或多張圖片，並儲存 ---
+    async function processAndSaveImages(imageBlobs) {
         try {
-            const imageBlobs = await Promise.all(compressionPromises);
-            
             if (!eatenState[startDate]) eatenState[startDate] = { items: {}, photos: [] };
 
             const allRecognizedItems = new Set();
@@ -2988,8 +3072,32 @@ document.addEventListener('DOMContentLoaded', function() {
             updateView();
             alert(`新增完成！已從 ${imageBlobs.length} 張照片中自動加入：${Array.from(allRecognizedItems).join('、')}`);
         } catch (error) {
-            console.error("讀取照片檔案時出錯:", error);
-            alert("讀取照片時發生錯誤。");
+            console.error("處理照片時出錯:", error);
+            alert("處理照片時發生錯誤。");
+        }
+    }
+
+    // --- 照片上傳事件監聽 ---
+    uploadPhotoInput.addEventListener('change', async (event) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        // 關閉可能開啟的選擇視窗
+        closeModal(cameraChoiceModal);
+
+        if (files.length === 1) {
+            // 如果只選一張，進入編輯模式
+            openPhotoEditor(files[0]);
+        } else {
+            // 如果選取多張，直接壓縮處理
+            if (files.length > 5) {
+                alert('一次最多只能上傳 5 張照片。');
+                event.target.value = ''; // 重置 input
+                return;
+            }
+            const compressionPromises = Array.from(files).map(file => compressImage(file, 0.7, 800, 'blob'));
+            const imageBlobs = await Promise.all(compressionPromises);
+            await processAndSaveImages(imageBlobs);
         }
 
         // 重置 input，以便可以再次選擇同一個檔案
@@ -3095,7 +3203,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 相機功能 ---
     document.getElementById('camera-btn').addEventListener('click', () => {
-        // 點擊相機按鈕時，直接開啟相機
+        // 點擊相機按鈕時，開啟選擇視窗
+        cameraChoiceModal.style.display = 'flex';
+    });
+
+    // 選擇視窗中的 "從相簿選取" 按鈕
+    document.getElementById('choice-upload-btn').addEventListener('click', () => {
+        // 這裡不需要做任何事，因為 label 的 for 屬性會自動觸發 input click
+        // 只需要在 input 的 change 事件中關閉 modal
+    });
+
+    // 選擇視窗中的 "開啟相機" 按鈕
+    document.getElementById('choice-camera-btn').addEventListener('click', () => {
+        closeModal(cameraChoiceModal);
         openCamera();
     });
 
@@ -3127,6 +3247,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // 儲存照片到裝置
+    function downloadImage(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || `veg-photo-${new Date().getTime()}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     document.getElementById('capture-btn').addEventListener('click', async () => {
         const video = document.getElementById('camera-view');
         const canvas = document.getElementById('camera-canvas');
@@ -3152,6 +3284,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
 
         stopCamera();
+        // 儲存照片到裝置
+        downloadImage(imageBlob);
+
         // 拍照後，直接將照片加入當日紀錄，並模擬辨識
         const recognizedVeggies = simulateRecognition();
         const recognizedVegNames = recognizedVeggies.map(v => v.name);
@@ -3213,6 +3348,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 全域點擊監聽，用於關閉已開啟的選單
     document.addEventListener('click', (e) => {
         // 修正：只有當點擊的目標及其任何父元素都不是 .veg-item 時，才關閉選單。
+        if (e.target.closest('.modal-content')) {
+            return; // 如果點擊在 modal 內容上，不關閉 veg-item 的 actions
+        }
+
         // 這可以防止點擊 .veg-item 的子元素（如圖片或文字）時，錯誤地關閉選單。
         const clickedVegItem = e.target.closest('.veg-item');
         if (!clickedVegItem) {
@@ -3226,6 +3365,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.onclick = e => { 
         if (e.target.classList.contains('modal')) {
+            if (e.target.id === 'photo-editor-modal' && cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
             closeModal(e.target);
         }
     };
@@ -3264,19 +3407,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const computedStyle = getComputedStyle(document.documentElement);
         const datesInRange = getDatesInRange(startDateStr, endDateStr);
 
-        // 建立一個包含所有合法蔬菜名稱的 Set，以便快速查找
-        const allValidVeggieNames = new Set();
-        Object.values(vegetables).forEach(veggieList => {
-            veggieList.forEach(veg => allValidVeggieNames.add(veg.name));
-        });
-
         // 計算選定日期範圍內的品項數量
         const itemCounts = {};
         datesInRange.forEach(dateStr => {
             const dailyEatenItems = eatenState[dateStr]?.items || {};
             Object.keys(dailyEatenItems).forEach(vegName => {
-                // 只將存在於預設蔬菜清單中的品項加入計算
-                if (dailyEatenItems[vegName] && allValidVeggieNames.has(vegName)) {
+                if (dailyEatenItems[vegName]) {
                     itemCounts[vegName] = (itemCounts[vegName] || 0) + 1;
                 }
             });
