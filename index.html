@@ -2796,22 +2796,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 資料匯出/匯入功能 (已更新為 IndexedDB 和 Blob 格式) ---
     async function downloadDataAsJson() {
+        // 建立一個包含所有現存蔬菜名稱的 Set，以便快速查找
+        const allExistingVegNames = new Set(
+            Object.values(vegetables).flatMap(category => category.map(veg => veg.name))
+        );
+
         const cleanEatenState = {};
         // 異步處理照片轉換
         for (const date in eatenState) {
             const dailyEntry = eatenState[date];
             if (dailyEntry) {
+                // 清理攝取品項，只保留現存的蔬菜
+                const cleanedItems = {};
+                if (dailyEntry.items) {
+                    for (const vegName in dailyEntry.items) {
+                        if (allExistingVegNames.has(vegName)) {
+                            cleanedItems[vegName] = dailyEntry.items[vegName];
+                        }
+                    }
+                }
+
                 const newPhotos = [];
                 for (const photo of (dailyEntry.photos || [])) {
                     let url = photo.url;
-                    // 如果是 Blob，轉換為 Base64
-                    if (photo.url instanceof Blob) {
-                        url = await blobToBase64(photo.url);
-                    }
+                    if (photo.url instanceof Blob) url = await blobToBase64(photo.url);
                     newPhotos.push({ ...photo, url });
                 }
                 cleanEatenState[date] = {
-                    items: dailyEntry.items || {},
+                    items: cleanedItems,
                     photos: newPhotos
                 };
             }
@@ -2849,6 +2861,11 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const data = JSON.parse(e.target.result);
                 if (data && data.vegetables && data.eatenState) {
+                    // 建立一個包含所有從檔案中匯入的蔬菜名稱的 Set
+                    const importedVegNames = new Set(
+                        Object.values(data.vegetables).flatMap(category => category.map(veg => veg.name))
+                    );
+
                     showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", async () => {
                         vegetables = data.vegetables;
                         
@@ -2860,6 +2877,18 @@ document.addEventListener('DOMContentLoaded', function() {
                             const entry = importedEatenState[date];
                             if (!entry) continue;
 
+                            // 清理攝取品項，確保只包含檔案中定義的蔬菜
+                            const cleanedItems = {};
+                            if (entry.items) {
+                                for (const vegName in entry.items) {
+                                    // 只加入存在於 `importedVegNames` 中的品項
+                                    if (importedVegNames.has(vegName)) {
+                                        cleanedItems[vegName] = entry.items[vegName];
+                                    }
+                                }
+                            }
+
+                            // 將照片從 Base64 轉回 Blob
                             const newPhotos = [];
                             for (const photo of (entry.photos || [])) {
                                 let url = photo.url;
@@ -2870,7 +2899,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
 
                             eatenState[date] = {
-                                items: entry.items || {},
+                                items: cleanedItems,
                                 photos: newPhotos
                             };
                         }
