@@ -103,6 +103,21 @@
             min-width: 140px;
         }
 
+        /* --- 日期切換按鈕 --- */
+        .date-nav-btn {
+            background-color: transparent;
+            border: none;
+            padding: 0.4rem;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .date-nav-btn:hover { background-color: #e4ede4; }
+        .date-nav-btn svg { width: 20px; height: 20px; stroke: var(--header-color); stroke-width: 2.5; }
+
         #back-to-home-btn {
             grid-area: back;
     background-color: transparent;
@@ -128,8 +143,10 @@
                     "back  header"
                     "dates dates"; /* 日期選擇器橫跨兩欄 */
             }
-            .date-selector { 
+            .date-selector {
+                flex-wrap: nowrap; /* 防止換行 */
                 justify-content: flex-start; /* 在換行時讓日期選擇器靠左對齊 */
+                gap: 0.5rem; /* 縮小元件間距 */
             }
         }
 
@@ -610,14 +627,6 @@
             }
         }
 
-        /* --- Selection Mode --- */
-        #vegetable-container {
-            display: none; /* Hide by default */
-        }
-        .summary-section.selection-mode #vegetable-container {
-            display: block;
-        }
-
 
         /* --- 彈出式視窗 (Modal) --- */
         .modal {
@@ -638,6 +647,17 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             text-align: center;
             position: relative;
+        }
+
+        /* --- 蔬菜選擇 Modal --- */
+        #selection-modal .modal-content {
+            max-width: 900px; /* 讓 Modal 可以更寬 */
+            width: 95%;
+        }
+        #selection-modal-body {
+            max-height: 65vh; /* 限制最大高度，超出則滾動 */
+            overflow-y: auto;
+            padding-right: 10px; /* 為滾動條預留空間 */
         }
 
         .modal-content.add-mode {
@@ -1090,9 +1110,15 @@
                 <h1>我的紀錄</h1>
             </div>
             <div class="date-selector">
+                <button id="prev-day-btn" class="date-nav-btn" title="前一天">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                </button>
                 <input type="date" id="start-date-picker" value="">
                 <span class="date-label">&mdash;</span>
                 <input type="date" id="end-date-picker" value="">
+                <button id="next-day-btn" class="date-nav-btn" title="後一天">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                </button>
             </div>
         </div>
         <input type="file" id="import-file-input" accept=".json" style="display: none;">
@@ -1118,7 +1144,7 @@
                 <ul id="summary-list"></ul>
                 <div id="photo-gallery-section"></div>
             </div>
-            <div id="vegetable-container"></div>
+            <!-- 蔬菜選擇容器已移至 Modal 中 -->
         </div>
 
         <div id="charts-grid" class="charts-container">
@@ -1174,6 +1200,19 @@
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-cancel" data-modal="management-modal">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 蔬菜選擇 Modal -->
+    <div id="selection-modal" class="modal">
+        <div class="modal-content">
+            <h3>選擇攝取品項</h3>
+            <div id="selection-modal-body">
+                <!-- 蔬菜列表將會被注入到這裡 -->
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-save" data-modal="selection-modal">完成</button>
             </div>
         </div>
     </div>
@@ -1524,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const summarySection = document.getElementById('daily-summary-section');
     const selectModeBtn = document.getElementById('select-mode-btn');
-    const vegContainer = document.getElementById('vegetable-container');
+    const selectionModal = document.getElementById('selection-modal');
     const editModal = document.getElementById('edit-modal');
     const confirmModal = document.getElementById('confirm-modal');
     const nutrientModal = document.getElementById('nutrient-modal');
@@ -1544,6 +1583,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const vegImageLabel = document.getElementById('veg-image-label');
     const startDatePicker = document.getElementById('start-date-picker');
     const endDatePicker = document.getElementById('end-date-picker');
+    const prevDayBtn = document.getElementById('prev-day-btn');
+    const nextDayBtn = document.getElementById('next-day-btn');
     const uploadPhotoInput = document.getElementById('upload-photo-input');
 
     // 日期範圍變數
@@ -1774,16 +1815,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 如果在多日模式下，強制關閉選擇模式
-        if (isMultiDay && summarySection.classList.contains('selection-mode')) {
-            summarySection.classList.remove('selection-mode');
-        }
-
         render();
     }
 
     function render() {
-        vegContainer.innerHTML = '';
+        const selectionModalBody = document.getElementById('selection-modal-body');
+        selectionModalBody.innerHTML = '';
         categoryOrder.forEach(category => {
             if (!vegetables[category]) return;
 
@@ -1870,7 +1907,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             categorySection.appendChild(categoryHeader);
             categorySection.appendChild(grid);
-            vegContainer.appendChild(categorySection);
+            selectionModalBody.appendChild(categorySection);
         });
         renderSummary();
     }
@@ -2862,7 +2899,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event Listeners
     // --- 統一的點擊處理 ---
-    vegContainer.addEventListener('click', e => {
+    document.getElementById('selection-modal-body').addEventListener('click', e => {
         const header = e.target.closest('.category-header');
         const vegItem = e.target.closest('.veg-item');
 
@@ -2973,23 +3010,18 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     selectModeBtn.addEventListener('click', () => {
-        const isExitingSelectionMode = summarySection.classList.contains('selection-mode');
-
-        // 當用戶點擊「儲存」按鈕（即退出選擇模式時）執行儲存操作。
-        // 雖然應用程式在每次點擊蔬菜時都會自動儲存，
-        // 但在此處增加一次明確的儲存步驟，可以確保操作符合用戶的預期，
-        // 並再次保證所有變更都已寫入本地儲存。
-        if (isExitingSelectionMode) {
-            saveData();
-        }
-        summarySection.classList.toggle('selection-mode');
+        selectionModal.style.display = 'flex';
     });
 
-    document.querySelectorAll('.btn-cancel').forEach(btn => {
+    // 為所有帶有 data-modal 屬性的按鈕（通常是取消或完成按鈕）添加關閉 modal 的事件監聽器
+    document.querySelectorAll('button[data-modal]').forEach(btn => {
         btn.addEventListener('click', () => {
             const modalId = btn.dataset.modal;
             if (modalId) {
-                closeModal(document.getElementById(modalId));
+                const modalToClose = document.getElementById(modalId);
+                if (modalToClose) {
+                    closeModal(modalToClose);
+                }
             }
         });
     });
@@ -3320,6 +3352,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
     startDatePicker.addEventListener('change', handleDateChange);
     endDatePicker.addEventListener('change', handleDateChange);
+
+    // --- 日期快速切換功能 ---
+    function shiftDate(days) {
+        let start = new Date(startDatePicker.value + 'T00:00:00');
+        let end = new Date(endDatePicker.value + 'T00:00:00');
+
+        // 計算日期範圍的長度 (天數)
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        // 移動起始日期
+        start.setDate(start.getDate() + days);
+        // 根據原始範圍長度，計算並移動結束日期
+        end = new Date(start);
+        end.setDate(end.getDate() + diffDays);
+
+        // 更新日期選擇器的值並觸發更新
+        startDatePicker.value = toLocalISOString(start);
+        endDatePicker.value = toLocalISOString(end);
+        handleDateChange();
+    }
+
+    prevDayBtn.addEventListener('click', () => shiftDate(-1));
+    nextDayBtn.addEventListener('click', () => shiftDate(1));
+
 
     // --- Home Screen & Calendar Navigation ---
     document.getElementById('back-to-home-btn').addEventListener('click', () => {
