@@ -2865,53 +2865,67 @@ document.addEventListener('DOMContentLoaded', function() {
                     const importedVegNames = new Set(
                         Object.values(data.vegetables).flatMap(category => category.map(veg => veg.name))
                     );
-
+    
                     showConfirmation("確定要用上傳的檔案覆蓋目前所有資料嗎？此操作無法復原。", async () => {
-                        vegetables = data.vegetables;
-                        
-                        const importedEatenState = data.eatenState;
-                        eatenState = {}; // 清空目前的狀態
-
-                        // 將 Base64 轉回 Blob
-                        for (const date in importedEatenState) {
-                            const entry = importedEatenState[date];
-                            if (!entry) continue;
-
-                            // 清理攝取品項，確保只包含檔案中定義的蔬菜
-                            const cleanedItems = {};
-                            if (entry.items) {
-                                for (const vegName in entry.items) {
-                                    // 只加入存在於 `importedVegNames` 中的品項
-                                    if (importedVegNames.has(vegName)) {
-                                        cleanedItems[vegName] = entry.items[vegName];
+                        try {
+                            vegetables = data.vegetables;
+                            
+                            const importedEatenState = data.eatenState;
+                            eatenState = {}; // 清空目前的狀態
+    
+                            // 將 Base64 轉回 Blob 並逐筆儲存
+                            for (const date in importedEatenState) {
+                                const entry = importedEatenState[date];
+                                if (!entry) continue;
+    
+                                // 清理攝取品項，確保只包含檔案中定義的蔬菜
+                                const cleanedItems = {};
+                                if (entry.items) {
+                                    for (const vegName in entry.items) {
+                                        // 只加入存在於 `importedVegNames` 中的品項
+                                        if (importedVegNames.has(vegName)) {
+                                            cleanedItems[vegName] = entry.items[vegName];
+                                        }
                                     }
                                 }
-                            }
-
-                            // 將照片從 Base64 轉回 Blob
-                            const newPhotos = [];
-                            for (const photo of (entry.photos || [])) {
-                                let url = photo.url;
-                                if (typeof url === 'string' && url.startsWith('data:image')) {
-                                    url = await base64ToBlob(url);
+    
+                                // 將照片從 Base64 轉回 Blob
+                                const newPhotos = [];
+                                for (const photo of (entry.photos || [])) {
+                                    let url = photo.url;
+                                    if (typeof url === 'string' && url.startsWith('data:image')) {
+                                        url = await base64ToBlob(url);
+                                        // 在處理大量照片時加入短暫延遲，給瀏覽器喘息空間
+                                        await new Promise(resolve => setTimeout(resolve, 10)); 
+                                    }
+                                    newPhotos.push({ ...photo, url });
                                 }
-                                newPhotos.push({ ...photo, url });
+    
+                                eatenState[date] = {
+                                    items: cleanedItems,
+                                    photos: newPhotos
+                                };
                             }
-
-                            eatenState[date] = {
-                                items: cleanedItems,
-                                photos: newPhotos
-                            };
+    
+                            categoryCollapseState = data.categoryCollapseState || {};
+                            recommendationCollapseState = data.recommendationCollapseState !== undefined ? data.recommendationCollapseState : null;
+                            
+                            // 逐一儲存，而不是一次性全部儲存
+                            await safeSetItem('dataVersion', data.version || dataVersion);
+                            await safeSetItem('vegetablesData', vegetables);
+                            await safeSetItem('eatenVeggiesDaily', eatenState);
+                            await safeSetItem('categoryCollapseState', categoryCollapseState);
+                            await safeSetItem('recommendationCollapseState', recommendationCollapseState);
+    
+                            updateView(); // 重新渲染畫面
+                            alert('資料已成功載入！');
+                        } catch (importError) {
+                            console.error("匯入資料並儲存時發生錯誤:", importError);
+                            alert('資料匯入失敗，可能是儲存空間不足。建議清理備份檔中不必要的照片後再試一次。');
+                            // 如果匯入失敗，重新載入原始資料以避免狀態不一致
+                            await loadData();
+                            updateView();
                         }
-
-                        categoryCollapseState = data.categoryCollapseState || {};
-                        recommendationCollapseState = data.recommendationCollapseState !== undefined ? data.recommendationCollapseState : null;
-                        
-                        await safeSetItem('dataVersion', data.version || dataVersion);
-
-                        await saveData(); // 等待所有資料儲存完成
-                        updateView(); // 重新渲染畫面
-                        alert('資料已成功載入！');
                     });
                 } else {
                     alert('檔案格式不符或已損毀，載入失敗。');
@@ -3779,7 +3793,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    async function checkAndRequestPersistence() {
+        if (navigator.storage && navigator.storage.persist && navigator.storage.estimate) {
+            // 1. 監控儲存空間用量
+            try {
+                const estimate = await navigator.storage.estimate();
+                console.log(`儲存空間用量: ${(estimate.usage / 1024 / 1024).toFixed(2)} MB`);
+                console.log(`儲存空間配額: ${(estimate.quota / 1024 / 1024).toFixed(2)} MB`);
+            } catch (error) {
+                console.error("無法取得儲存空間估計值:", error);
+            }
+
+            // 2. 請求持久性儲存
+            const isPersisted = await navigator.storage.persisted();
+            console.log(`儲存空間是否已持久化: ${isPersisted}`);
+            if (!isPersisted) {
+                const isSuccessfullyPersisted = await navigator.storage.persist();
+                if (isSuccessfullyPersisted) {
+                    console.log('成功取得持久性儲存權限！');
+                } else {
+                    console.log('使用者拒絕或無法取得持久性儲存權限。');
+                }
+            }
+        }
+    }
+
     async function initializeApp() {
+        await checkAndRequestPersistence(); // 檢查並請求持久性儲存
         // --- Data Migration from localStorage to IndexedDB ---
         const lsVeggies = localStorage.getItem('vegetablesData');
         const idbVeggies = await idb.get('vegetablesData');
