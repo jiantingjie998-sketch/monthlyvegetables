@@ -2838,17 +2838,27 @@ document.addEventListener('DOMContentLoaded', function() {
             recommendationCollapseState: recommendationCollapseState
         };
 
+        // 偵測是否為 iPhone
+        const isIPhone = /iPhone/i.test(navigator.userAgent);
+
         const dataStr = JSON.stringify(dataToSave);
         const dataBlob = new Blob([dataStr], { type: "application/json" });
         const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        const localToday = toLocalISOString(new Date());
-        link.download = `veg-backup-${localToday}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+
+        if (isIPhone) {
+            // 在 iPhone 上，開啟新分頁顯示 JSON 內容，讓使用者手動儲存
+            window.open(url, '_blank');
+            URL.revokeObjectURL(url); // 開啟後即可釋放
+        } else {
+            // 在其他裝置上，維持原有的點擊下載行為
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `veg-backup-${toLocalISOString(new Date())}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
     }
 
     async function handleFileUpload(event) {
